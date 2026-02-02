@@ -23,14 +23,8 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
+# -*- coding: utf-8 -*-
 
-# noinspection PyPep8Naming
-def classFactory(iface):  # pylint: disable=invalid-name
-    """Load SentinelSTAC class from file SentinelSTAC.
-
-    :param iface: A QGIS interface instance.
-    :type iface: QgsInterface
-    """
-    #
+def classFactory(iface):
     from .sentinel_stac_loader import SentinelSTAC
     return SentinelSTAC(iface)
