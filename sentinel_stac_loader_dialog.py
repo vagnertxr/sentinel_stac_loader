@@ -104,7 +104,7 @@ class SentinelSTACLoader:
             print(f"{idx:<8} | {date_str:<20} | {clouds:<10.2f} | {img_id}")
         
         print("-" * 70)
-        self.show_message("Lista Gerada", "Veja os detalhes no Console Python (Ctrl+Alt+P).", Qgis.Info)
+        self.show_message("Lista Gerada", "Imagem carregada.", Qgis.Info)
 
     def load_vrt(self, item, composition_name):
         """Gera o VRT baseado na composição escolhida."""
