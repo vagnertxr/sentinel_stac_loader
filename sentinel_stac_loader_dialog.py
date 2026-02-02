@@ -32,11 +32,11 @@ from qgis.core import (
 from qgis.utils import iface
 import processing
 
-# Carregamento da interface do Qt Designer
+
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sentinel_stac_loader_dialog_base.ui'))
 
-# --- CLASSE DA LÓGICA DE PROCESSAMENTO ---
+
 class SentinelSTACLoader:
     def __init__(self):
         self.catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
@@ -158,13 +158,13 @@ class SentinelSTACLoader:
             self.show_message("Sucesso", f"Imagem carregada com sucesso!", Qgis.Success)
 
 
-# --- CLASSE DO DIÁLOGO (INTERFACE) ---
+
 class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         super(SentinelSTACDialog, self).__init__(parent)
         self.setupUi(self)
         
-        # Popular o combo box com as composições automaticamente ao abrir
+        
         loader_temp = SentinelSTACLoader()
         self.comboBox_composicao.clear()
         self.comboBox_composicao.addItems(list(loader_temp.compositions.keys()))
@@ -172,16 +172,16 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
     def process_stac_load(self):
         """Lê a UI e executa o loader."""
         
-        # Captura os valores da Interface Gráfica (UI)
+        
         data_inicio = self.dateEdit_inicio.date().toString("yyyy-MM-dd")
         data_final = self.dateEdit_final.date().toString("yyyy-MM-dd")
         composicao = self.comboBox_composicao.currentText()
         indice = self.spinBox_indice.value()
 
-        # Instancia a lógica
+        
         loader = SentinelSTACLoader()
 
-        # Executa as funções
+        
         loader.list_available_images(data_inicio, data_final)
         loader.run(
             start_date=data_inicio, 

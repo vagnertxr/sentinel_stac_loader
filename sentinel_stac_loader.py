@@ -24,10 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-
-# Initialize Qt resources from file resources.py
 from .resources import *
-# Import the code for the dialog
 from .sentinel_stac_loader_dialog import SentinelSTACDialog
 import os.path
 
@@ -37,16 +34,9 @@ class SentinelSTAC:
 
     def __init__(self, iface):
         """Constructor."""
-        # Save reference to the QGIS interface
         self.iface = iface
-        # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        
-        # --- CORREÇÃO AQUI ---
-        # Declaramos a variável da janela como None para evitar o AttributeError
         self.dlg = None 
-        
-        # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
@@ -57,12 +47,8 @@ class SentinelSTAC:
             self.translator = QTranslator()
             self.translator.load(locale_path)
             QCoreApplication.installTranslator(self.translator)
-
-        # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&Sentinel STAC Loader')
-
-        # Check if plugin was started the first time in current QGIS session
         self.first_start = None
 
     def tr(self, message):
@@ -104,7 +90,7 @@ class SentinelSTAC:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        # Verifique se o caminho do ícone está correto no seu resources.qrc
+        
         icon_path = ':/plugins/sentinel_stac_loader/icon.png'
         self.add_action(
             icon_path,
@@ -123,20 +109,19 @@ class SentinelSTAC:
     def run(self):
         """Executa quando o ícone do plugin é clicado"""
         
-        # Agora o teste 'if self.dlg is None' vai funcionar porque definimos no __init__
+
         if self.dlg is None:
-            # Cria a instância da janela (Diálogo)
+            
             self.dlg = SentinelSTACDialog()
             
-            # Conecta o botão da sua UI (btn_carregar) à função de processamento
-            # Certifique-se que o nome no Qt Designer é exatamente 'btn_carregar'
+
             self.dlg.btn_carregar.clicked.connect(self.dlg.process_stac_load)
 
-        # Reseta o primeiro início
+       
         self.first_start = False
 
-        # Mostra a janela
+        
         self.dlg.show()
         
-        # Executa o diálogo (bloqueia o QGIS até fechar a janela)
+        
         result = self.dlg.exec_()

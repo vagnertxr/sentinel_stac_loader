@@ -16,7 +16,7 @@ python3 -m pip install pystac-client planetary-computer shapely
 ```
 
 ## Instalação de Dependências (Linux)
-No Windows, utilize o **OSGeo4W Shell** com privilégios de administrador:
+Instale via terminal no interpretador Python utilizado pelo QGIS:
 
 ```bash
 pip install pystac-client planetary-computer shapely
