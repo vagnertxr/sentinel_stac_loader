@@ -1,12 +1,12 @@
-# Sentinel STAC Loader
-0.1
+# Quick Sentinel-2 STAC Loader
+0.2
 
 Plugin para QGIS destinado à busca e carregamento de produtos Sentinel-2 L2A via API STAC do Microsoft Planetary Computer.
 
 Desenvolvido com Python e com a ferramenta QGIS Plugin Builder.
 
 Faça download do .zip e descompacte na pasta de plugins do seu QGIS
-(no Windows está em "AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins")
+(no Windows está em "%AppData%\Roaming\QGIS\QGIS3\profiles\default\python\plugins")
 
 
 ## Dependências
@@ -16,7 +16,7 @@ O plugin requer as seguintes bibliotecas Python:
 - `shapely`
 
 ## Instalação de Dependências (Windows)
-No Windows, utilize o **OSGeo4W Shell** com privilégios de administrador:
+No Windows, utilize o **OSGeo4W Shell**:
 
 ```bash
 python3 -m pip install pystac-client planetary-computer shapely

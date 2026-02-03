@@ -3,17 +3,17 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Sentinel STAC Loader
+name=Quick Sentinel-2 STAC Loader
 qgisMinimumVersion=3.0
 description=Loads Sentinel-2 Microsoft's Planetary Computer STAC API
-version=0.1
+version=0.2
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
-about=Loads Sentinel-2 Microsoft's Planetary Computer STAC API
+about=Plugin para QGIS destinado à busca e carregamento de produtos Sentinel-2 L2A via API STAC do Microsoft Planetary Computer. Lista composições pré-configuradas e carrega as imagens em VRT.
 
 tracker=http://bugs
-repository=http://repo
+repository=https://github.com/vagnertxr/sentinel_stac_loader
 # End of mandatory metadata
 
 # Recommended items:

@@ -48,7 +48,7 @@ class SentinelSTAC:
             self.translator.load(locale_path)
             QCoreApplication.installTranslator(self.translator)
         self.actions = []
-        self.menu = self.tr(u'&Sentinel STAC Loader')
+        self.menu = self.tr(u'&Quick Sentinel-2 STAC Loader')
         self.first_start = None
 
     def tr(self, message):
@@ -103,25 +103,19 @@ class SentinelSTAC:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginMenu(self.tr(u'&Sentinel STAC Loader'), action)
+            self.iface.removePluginMenu(self.tr(u'&Quick Sentinel-2 STAC Loader'), action)
             self.iface.removeToolBarIcon(action)
 
     def run(self):
-        """Executa quando o ícone do plugin é clicado"""
-        
-
         if self.dlg is None:
-            
+            from .sentinel_stac_loader_dialog import SentinelSTACDialog
             self.dlg = SentinelSTACDialog()
             
-
+            # Conexão do botão original (Carregar)
             self.dlg.btn_carregar.clicked.connect(self.dlg.process_stac_load)
+            
+            # NOVA CONEXÃO: Botão Listar
+            self.dlg.btn_listar.clicked.connect(self.dlg.popular_tabela)
 
-       
-        self.first_start = False
-
-        
         self.dlg.show()
-        
-        
-        result = self.dlg.exec_()
+        self.dlg.exec_()
