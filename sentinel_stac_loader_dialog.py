@@ -10,11 +10,8 @@ from qgis.core import (
 from qgis.utils import iface
 import processing
 
-# Carrega o arquivo UI
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sentinel_stac_loader_dialog_base.ui'))
-
-# ... (manter imports e FORM_CLASS iguais)
 
 class SentinelSTACLoader:
     """Classe responsável apenas pela lógica de busca e processamento de dados."""
@@ -38,7 +35,6 @@ class SentinelSTACLoader:
         return [p1.x(), p1.y(), p2.x(), p2.y()]
 
     def search_images(self, bbox, start_date, end_date):
-        # ... continua o resto do código
         try:
             catalog = pystac_client.Client.open(self.catalog_url)
             search = catalog.search(
@@ -47,7 +43,6 @@ class SentinelSTACLoader:
                 datetime=f"{start_date}/{end_date}"
             )
             items = list(search.get_all_items())
-            # Ordena por nuvens
             return sorted(items, key=lambda x: x.properties.get("eo:cloud_cover", 100))
         except Exception as e:
             iface.messageBar().pushMessage("Erro STAC", str(e), Qgis.Critical)
@@ -69,7 +64,7 @@ class SentinelSTACLoader:
             result = processing.run("gdal:buildvirtualraster", params)
             cloud_pct = item.properties.get("eo:cloud_cover", 0)
             
-            # Identifica o satélite pelo ID do item para o nome da camada
+        
             prefix = "S2" if "sentinel" in self.collection else "LS"
             layer_name = f"{prefix}_{item.id}_{composition_name} ({cloud_pct:.1f}% Nuvens)"
             
@@ -101,9 +96,16 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
             self.loader.compositions = {
                 "True Color (B04, B03, B02)": ['B04', 'B03', 'B02'],
                 "False Color NIR (B08, B04, B03)": ['B08', 'B04', 'B03'],
+                "False Color SWIR (B12, B08, B04)": ['B12', 'B08', 'B04'],
                 "Agriculture (B11, B08, B02)": ['B11', 'B08', 'B02'],
-                "Shortwave IR (B12, B08, B03)": ['B12', 'B08', 'B03']
+                "Geology (B12, B11, B02)": ['B12', 'B11', 'B02'],
+                "Urban / Solo Exposto (B12, B11, B04)": ['B12', 'B11', 'B04'],
+                "Bathymetric (B04, B03, B01)": ['B04', 'B03', 'B01'],
+                "Atmospheric Penetration (B12, B11, B8A)": ['B12', 'B11', 'B8A'],
+                "Vegetation Index / Biomassa (B08, B11, B04)": ['B08', 'B11', 'B04'],
+                "Shortwave IR / Queimadas (B12, B08, B03)": ['B12', 'B08', 'B03']
             }
+
         elif "Landsat 8" in satelite:
             self.loader.collection = "landsat-c2-l2"
             self.loader.compositions = {
@@ -112,7 +114,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
                 "Agriculture (SWIR1, NIR, Blue)": ['swir16', 'nir08', 'blue']
             }
         elif "Landsat 5" in satelite or "Landsat 7" in satelite:
-            # Landsat 4, 5 e 7 usam a mesma nomenclatura de bandas no PC
+            
             self.loader.collection = "landsat-c2-l2"
             self.loader.compositions = {
                 "True Color (Red, Green, Blue)": ['red', 'green', 'blue'],
@@ -124,7 +126,6 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_composicao.clear()
         self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
 
-    # ... (manter as funções popular_tabela e process_stac_load iguais)
 
     def atualizar_indice_pelo_clique(self, row, column):
         """Atualiza o spinbox quando o usuário clica em uma linha da tabela."""
