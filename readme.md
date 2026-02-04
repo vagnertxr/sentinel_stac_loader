@@ -1,11 +1,11 @@
 # Quick Sentinel-2 STAC Loader
 0.2
 
-Plugin para QGIS destinado à busca e carregamento de produtos Sentinel-2 L2A via API STAC do Microsoft Planetary Computer.
+Plugin para QGIS destinado à busca e carregamento de imagens de satélite via API STAC do Microsoft Planetary Computer.
 
 Desenvolvido com Python e com a ferramenta QGIS Plugin Builder.
 
-Faça download do .zip e utilize a opção "Install from ZIP" no Gerenciador de Plugins do QGIS ou  descompacte na pasta de plugins
+Faça download do .zip e descompacte na pasta de plugins do seu QGIS
 (no Windows está em "%AppData%\Roaming\QGIS\QGIS3\profiles\default\python\plugins")
 
 

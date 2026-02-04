@@ -5,12 +5,12 @@
 [general]
 name=Quick Sentinel-2 STAC Loader
 qgisMinimumVersion=3.0
-description=Loads Sentinel-2 Microsoft's Planetary Computer STAC API
+description=Loads Sentinel-2 and LANDSAT from Microsoft's Planetary Computer STAC API
 version=0.2
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
-about=Plugin para QGIS destinado à busca e carregamento de produtos Sentinel-2 L2A via API STAC do Microsoft Planetary Computer. Lista composições pré-configuradas e carrega as imagens em VRT.
+about=Plugin para QGIS destinado à busca e carregamento de imagens de satélite via API STAC do Microsoft Planetary Computer. Lista composições pré-configuradas e carrega as imagens em VRT.
 
 tracker=http://bugs
 repository=https://github.com/vagnertxr/sentinel_stac_loader

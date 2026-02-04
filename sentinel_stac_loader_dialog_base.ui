@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>704</width>
+    <width>657</width>
     <height>773</height>
    </rect>
   </property>
@@ -20,7 +20,7 @@
   <widget class="QLabel" name="label_7">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>20</x>
      <y>15</y>
      <width>561</width>
      <height>31</height>
@@ -33,7 +33,7 @@
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>20</x>
      <y>50</y>
      <width>561</width>
      <height>41</height>
@@ -49,7 +49,7 @@
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>20</x>
      <y>100</y>
      <width>120</width>
      <height>25</height>
@@ -62,7 +62,7 @@
   <widget class="QComboBox" name="comboBox_composicao">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>200</x>
      <y>100</y>
      <width>441</width>
      <height>30</height>
@@ -72,7 +72,7 @@
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>20</x>
      <y>150</y>
      <width>120</width>
      <height>25</height>
@@ -85,7 +85,7 @@
   <widget class="QDateEdit" name="dateEdit_inicio">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>200</x>
      <y>150</y>
      <width>150</width>
      <height>30</height>
@@ -93,7 +93,7 @@
    </property>
    <property name="dateTime">
     <datetime>
-     <hour>3</hour>
+     <hour>0</hour>
      <minute>0</minute>
      <second>0</second>
      <year>2021</year>
@@ -108,7 +108,7 @@
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>20</x>
      <y>200</y>
      <width>120</width>
      <height>25</height>
@@ -121,7 +121,7 @@
   <widget class="QDateEdit" name="dateEdit_final">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>200</x>
      <y>200</y>
      <width>150</width>
      <height>30</height>
@@ -129,7 +129,7 @@
    </property>
    <property name="dateTime">
     <datetime>
-     <hour>3</hour>
+     <hour>0</hour>
      <minute>0</minute>
      <second>0</second>
      <year>2026</year>
@@ -144,7 +144,7 @@
   <widget class="QLabel" name="label_6">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>120</x>
      <y>645</y>
      <width>201</width>
      <height>30</height>
@@ -157,7 +157,7 @@
   <widget class="QSpinBox" name="spinBox_indice">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>300</x>
      <y>645</y>
      <width>70</width>
      <height>30</height>
@@ -170,7 +170,7 @@
   <widget class="QLabel" name="label_hint">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>120</x>
      <y>690</y>
      <width>431</width>
      <height>21</height>
@@ -186,7 +186,7 @@
   <widget class="QPushButton" name="btn_carregar">
    <property name="geometry">
     <rect>
-     <x>210</x>
+     <x>170</x>
      <y>720</y>
      <width>300</width>
      <height>40</height>
@@ -204,18 +204,18 @@
     <rect>
      <x>20</x>
      <y>300</y>
-     <width>671</width>
+     <width>621</width>
      <height>321</height>
     </rect>
    </property>
    <property name="editTriggers">
-    <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+    <set>QAbstractItemView::NoEditTriggers</set>
    </property>
    <property name="selectionMode">
-    <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+    <enum>QAbstractItemView::SingleSelection</enum>
    </property>
    <property name="selectionBehavior">
-    <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+    <enum>QAbstractItemView::SelectRows</enum>
    </property>
    <property name="columnCount">
     <number>4</number>
@@ -247,7 +247,7 @@
   <widget class="QPushButton" name="btn_listar">
    <property name="geometry">
     <rect>
-     <x>210</x>
+     <x>170</x>
      <y>250</y>
      <width>300</width>
      <height>40</height>
