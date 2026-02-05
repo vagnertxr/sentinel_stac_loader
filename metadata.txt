@@ -9,8 +9,8 @@ description=Loads Sentinel-2 and LANDSAT from Microsoft's Planetary Computer STA
 version=0.4
 author=Vagner Teixeira
 email=junior.vagner@live.com
-about=A QGIS plugin designed for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It features pre-configured band compositions and loads images directly as VRT layers.
-tracker=https://github.com/vagnertxr/sentinel_stac_loader/issues
+about=A QGIS plugin for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It features pre-configured band compositions and loads images directly as VRT layers.
+\n\nEXTERNAL DEPENDENCIES:\nThis plugin requires 'pystac-client', 'planetary-computer', and 'shapely' Python libraries. \n\nINSTALLATION ON WINDOWS:\nOpen OSGeo4W Shell as admin and run: python3 -m pip install pystac-client planetary-computer shapely \n\nMore info: https://github.com/vagnertxr/sentinel_stac_loadertracker=https://github.com/vagnertxr/sentinel_stac_loader/issues
 repository=https://github.com/vagnertxr/sentinel_stac_loader
 
 # End of mandatory metadata
@@ -25,7 +25,8 @@ hasProcessingProvider=no
 tags=python
 
 homepage=https://github.com/vagnertxr/sentinel_stac_loader
-category=Plugins
+category=Raster
+tags=raster, stac, sentinel, landsat, planetary computer, remote sensing
 icon=icon.png
 # experimental flag
 experimental=False
@@ -36,7 +37,7 @@ deprecated=False
 # Since QGIS 3.8, a comma separated list of plugins to be installed
 # (or upgraded) can be specified.
 # Check the documentation for more information.
-# plugin_dependencies=
+plugin_dependencies= pystac-client, planetary-computer, shapely
 
 Category of the plugin: Raster, Vector, Database or Web
 # category=
