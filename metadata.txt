@@ -3,17 +3,16 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Quick Sentinel-2 STAC Loader
+name=Quick VRT Imagery Loader
 qgisMinimumVersion=3.0
 description=Loads Sentinel-2 and LANDSAT from Microsoft's Planetary Computer STAC API
-version=0.2
+version=0.4
 author=Vagner Teixeira
 email=junior.vagner@live.com
-
-about=Plugin para QGIS destinado à busca e carregamento de imagens de satélite via API STAC do Microsoft Planetary Computer. Lista composições pré-configuradas e carrega as imagens em VRT.
-
+about=A QGIS plugin designed for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It features pre-configured band compositions and loads images directly as VRT layers.
 tracker=http://bugs
 repository=https://github.com/vagnertxr/sentinel_stac_loader
+
 # End of mandatory metadata
 
 # Recommended items:
@@ -44,4 +43,3 @@ Category of the plugin: Raster, Vector, Database or Web
 
 # If the plugin can run on QGIS Server.
 server=False
-

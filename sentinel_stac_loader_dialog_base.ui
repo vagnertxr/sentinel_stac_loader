@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>657</width>
-    <height>773</height>
+    <width>660</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Quick Sentinel-2 STAC Loader</string>
+   <string>Quick VRT Imagery Loader</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -21,13 +21,13 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>15</y>
-     <width>561</width>
+     <y>20</y>
+     <width>621</width>
      <height>31</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;Quick Sentinel-2 (and also LANDSAT) STAC Loader&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;Quick VRT Imagery Loader&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
@@ -40,7 +40,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Selecione os parâmetros para pesquisar imagens na extensão atual do mapa.</string>
+    <string>Select parameters for searching images in the current map extent.</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -56,15 +56,15 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Composição:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Composition:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QComboBox" name="comboBox_composicao">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>130</x>
      <y>100</y>
-     <width>441</width>
+     <width>491</width>
      <height>30</height>
     </rect>
    </property>
@@ -79,13 +79,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Data inicial:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Start date:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QDateEdit" name="dateEdit_inicio">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>130</x>
      <y>150</y>
      <width>150</width>
      <height>30</height>
@@ -115,13 +115,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Data final:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;End date:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QDateEdit" name="dateEdit_final">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>130</x>
      <y>200</y>
      <width>150</width>
      <height>30</height>
@@ -144,22 +144,22 @@
   <widget class="QLabel" name="label_6">
    <property name="geometry">
     <rect>
-     <x>120</x>
-     <y>645</y>
-     <width>201</width>
+     <x>130</x>
+     <y>680</y>
+     <width>121</width>
      <height>30</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Selecionar imagem:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Choose image:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QSpinBox" name="spinBox_indice">
    <property name="geometry">
     <rect>
-     <x>300</x>
-     <y>645</y>
-     <width>70</width>
+     <x>305</x>
+     <y>680</y>
+     <width>50</width>
      <height>30</height>
     </rect>
    </property>
@@ -170,14 +170,14 @@
   <widget class="QLabel" name="label_hint">
    <property name="geometry">
     <rect>
-     <x>120</x>
-     <y>690</y>
-     <width>431</width>
+     <x>20</x>
+     <y>720</y>
+     <width>621</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#686868;&quot;&gt;As imagens estão listadas por porcentagem de cobertura de nuvens, começando em 0.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#686868;&quot;&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; color:#686868;&quot;&gt;The images are listed by cloud cover percentage, starting from 0% (lowest to highest)&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -186,26 +186,26 @@
   <widget class="QPushButton" name="btn_carregar">
    <property name="geometry">
     <rect>
-     <x>170</x>
-     <y>720</y>
+     <x>180</x>
+     <y>750</y>
      <width>300</width>
-     <height>40</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="styleSheet">
     <string>font-weight: bold; font-size: 11pt;</string>
    </property>
    <property name="text">
-    <string>Carregar imagem</string>
+    <string>Load image</string>
    </property>
   </widget>
   <widget class="QTableWidget" name="tableWidget">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>300</y>
+     <y>290</y>
      <width>621</width>
-     <height>321</height>
+     <height>381</height>
     </rect>
    </property>
    <property name="editTriggers">
@@ -225,17 +225,17 @@
    </attribute>
    <column>
     <property name="text">
-     <string>Índice</string>
+     <string>Index</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>Data da imagem</string>
+     <string>Image date</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>Nuvens (%)</string>
+     <string>Clouds (%)</string>
     </property>
    </column>
    <column>
@@ -247,8 +247,8 @@
   <widget class="QPushButton" name="btn_listar">
    <property name="geometry">
     <rect>
-     <x>170</x>
-     <y>250</y>
+     <x>180</x>
+     <y>240</y>
      <width>300</width>
      <height>40</height>
     </rect>
@@ -257,13 +257,13 @@
     <string>font-weight: bold; font-size: 11pt;</string>
    </property>
    <property name="text">
-    <string>Listar imagens disponíveis</string>
+    <string>List available images</string>
    </property>
   </widget>
   <widget class="QComboBox" name="comboBox_satelite">
    <property name="geometry">
     <rect>
-     <x>380</x>
+     <x>360</x>
      <y>200</y>
      <width>261</width>
      <height>30</height>
@@ -293,14 +293,14 @@
   <widget class="QLabel" name="label_8">
    <property name="geometry">
     <rect>
-     <x>480</x>
+     <x>370</x>
      <y>170</y>
-     <width>120</width>
+     <width>241</width>
      <height>25</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Satélite:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Satellite:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
  </widget>

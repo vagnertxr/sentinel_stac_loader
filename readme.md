@@ -1,34 +1,42 @@
-# Quick Sentinel-2 STAC Loader
-0.2
+# Quick VRT Imagery Loader
+Version 0.4
 
-Plugin para QGIS destinado à busca e carregamento de imagens de satélite via API STAC do Microsoft Planetary Computer.
+A QGIS plugin designed for searching and loading satellite imagery via the **Microsoft Planetary Computer STAC API**. This tool optimizes the remote sensing workflow by providing pre-configured band compositions and loading imagery directly as Virtual Rasters (VRT).
 
-Desenvolvido com Python e com a ferramenta QGIS Plugin Builder.
+Developed with Python and the QGIS Plugin Builder tool.
 
-Faça download do .zip e descompacte na pasta de plugins do seu QGIS
-(no Windows está em "%AppData%\Roaming\QGIS\QGIS3\profiles\default\python\plugins")
+## Installation
 
+Download the `.zip` file from this repository.
 
-## Dependências
-O plugin requer as seguintes bibliotecas Python:
+You may use the Install from ZIP option on your QGIS plugin manager or Extract the folder into your QGIS plugins directory:
+   - **Windows**: 
+   
+   `%AppData%\Roaming\QGIS\QGIS3\profiles\default\python\plugins`
+
+   - **Linux**: 
+   
+   `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins`
+
+## Dependencies
+The plugin requires the following Python libraries installed within your QGIS environment:
 - `pystac-client`
 - `planetary-computer`
 - `shapely`
 
-## Instalação de Dependências (Windows)
-No Windows, utilize o **OSGeo4W Shell**:
-
+#### **Windows (via OSGeo4W Shell)**
+Open the **OSGeo4W Shell** as Administrator and run:
 ```bash
 python3 -m pip install pystac-client planetary-computer shapely
 ```
 
-## Instalação de Dependências (Linux)
-Instale via terminal no interpretador Python utilizado pelo QGIS:
+#### Linux (via Terminal)
+Run the following command in your terminal:
 
 ```bash
 pip install pystac-client planetary-computer shapely
 ```
 
-## Licença
+## License
 
-GNU General Public License v2.
+This project is licensed under the GNU General Public License v2.

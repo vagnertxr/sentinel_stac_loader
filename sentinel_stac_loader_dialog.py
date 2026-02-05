@@ -14,14 +14,15 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sentinel_stac_loader_dialog_base.ui'))
 
 class SentinelSTACLoader:
-    """Classe responsável apenas pela lógica de busca e processamento de dados."""
+    """Loads and processes data"""
+# Defines STAC API URL and collections
     def __init__(self):
         self.catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
         self.collection = "sentinel-2-l2a"
         self.compositions = {}
 
     def get_canvas_bbox(self):
-        """Obtém a extensão atual do canvas em WGS84."""
+        """WGS-84 bounding box of current map canvas."""
         canvas = iface.mapCanvas()
         extent = canvas.extent()
         crs_src = canvas.mapSettings().destinationCrs()
@@ -45,7 +46,7 @@ class SentinelSTACLoader:
             items = list(search.get_all_items())
             return sorted(items, key=lambda x: x.properties.get("eo:cloud_cover", 100))
         except Exception as e:
-            iface.messageBar().pushMessage("Erro STAC", str(e), Qgis.Critical)
+            iface.messageBar().pushMessage("STAC error", str(e), Qgis.Critical)
             return []
 
     def load_vrt(self, item, composition_name):
@@ -73,7 +74,7 @@ class SentinelSTACLoader:
                 QgsProject.instance().addMapLayer(vrt_layer)
                 return True
         except Exception as e:
-            iface.messageBar().pushMessage("Erro VRT", str(e), Qgis.Critical)
+            iface.messageBar().pushMessage("VRT error", str(e), Qgis.Critical)
         return False
 
 class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
@@ -88,7 +89,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         self.atualizar_parametros_satelite()
 
     def atualizar_parametros_satelite(self):
-        """Configura coleções e bandas para Sentinel-2, Landsat 8/9 e Landsat 5/7."""
+        """Configures collections and compositions for each satellite type."""
         satelite = self.comboBox_satelite.currentText()
         
         if "Sentinel" in satelite:
@@ -99,28 +100,32 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
                 "False Color SWIR (B12, B08, B04)": ['B12', 'B08', 'B04'],
                 "Agriculture (B11, B08, B02)": ['B11', 'B08', 'B02'],
                 "Geology (B12, B11, B02)": ['B12', 'B11', 'B02'],
-                "Urban / Solo Exposto (B12, B11, B04)": ['B12', 'B11', 'B04'],
+                "Urban / Soil (B12, B11, B04)": ['B12', 'B11', 'B04'],
                 "Bathymetric (B04, B03, B01)": ['B04', 'B03', 'B01'],
                 "Atmospheric Penetration (B12, B11, B8A)": ['B12', 'B11', 'B8A'],
-                "Vegetation Index / Biomassa (B08, B11, B04)": ['B08', 'B11', 'B04'],
-                "Shortwave IR / Queimadas (B12, B08, B03)": ['B12', 'B08', 'B03']
+                "Vegetation Index / Biomass (B08, B11, B04)": ['B08', 'B11', 'B04'],
+                "Shortwave IR / Wildfires (B12, B08, B03)": ['B12', 'B08', 'B03']
             }
 
         elif "Landsat 8" in satelite:
             self.loader.collection = "landsat-c2-l2"
             self.loader.compositions = {
-                "True Color (Red, Green, Blue)": ['red', 'green', 'blue'],
-                "False Color NIR (NIR, Red, Green)": ['nir08', 'red', 'green'],
-                "Agriculture (SWIR1, NIR, Blue)": ['swir16', 'nir08', 'blue']
+                "True Color (R, G, B)": ['red', 'green', 'blue'],
+                "False Color NIR (NIR, R, G)": ['nir08', 'red', 'green'],
+                "Agriculture (SWIR1, NIR, B)": ['swir16', 'nir08', 'blue'],
+                "Geology (SWIR2, SWIR1, B)": ['swir22', 'swir16', 'blue'],
+                "Urban / Soil (SWIR2, SWIR1, R)": ['swir22', 'swir16', 'red'],
+                "Bathymetric (G, R, Coastal)": ['green', 'red', 'coastal']
             }
         elif "Landsat 5" in satelite or "Landsat 7" in satelite:
-            
             self.loader.collection = "landsat-c2-l2"
             self.loader.compositions = {
-                "True Color (Red, Green, Blue)": ['red', 'green', 'blue'],
-                "False Color NIR (NIR, Red, Green)": ['nir', 'red', 'green'],
-                "Agriculture (SWIR1, NIR, Blue)": ['swir1', 'nir', 'blue'],
-                "Shortwave IR (SWIR2, NIR, Green)": ['swir2', 'nir', 'green']
+                "True Color (R, G, B)": ['red', 'green', 'blue'],
+                "False Color NIR (NIR, R, G)": ['nir', 'red', 'green'],
+                "Agriculture (SWIR1, NIR, B)": ['swir1', 'nir', 'blue'],
+                "Geology (SWIR2, SWIR1, R)": ['swir2', 'swir1', 'red'],
+                "Shortwave IR / Wildfires (SWIR2, NIR, G)": ['swir2', 'nir', 'green'],
+                "Atmospheric Penetration": ['swir2', 'swir1', 'nir']
             }
         
         self.comboBox_composicao.clear()
@@ -128,11 +133,11 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def atualizar_indice_pelo_clique(self, row, column):
-        """Atualiza o spinbox quando o usuário clica em uma linha da tabela."""
+        """Updates the spinbox value when the user clicks a row in the table."""
         self.spinBox_indice.setValue(row)
 
     def popular_tabela(self):
-        """Busca as imagens e preenche o QTableWidget na interface."""
+        """Searches for STAC items and populates the table widget."""
         data_inicio = self.dateEdit_inicio.date().toString("yyyy-MM-dd")
         data_final = self.dateEdit_final.date().toString("yyyy-MM-dd")
         
@@ -140,7 +145,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         items = self.loader.search_images(bbox, data_inicio, data_final)
         
         if not items:
-            iface.messageBar().pushMessage("STAC", "Nenhuma imagem encontrada.", Qgis.Warning)
+            iface.messageBar().pushMessage("STAC", "No image found for selected parameters.", Qgis.Warning)
             return
 
         self.tableWidget.setRowCount(0)
@@ -156,10 +161,10 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
             self.tableWidget.setItem(idx, 3, QtWidgets.QTableWidgetItem(img_id))
             
         self.tableWidget.resizeColumnsToContents()
-        iface.messageBar().pushMessage("Sucesso", f"{len(items)} imagens listadas.", Qgis.Info)
+        iface.messageBar().pushMessage("Success", f"{len(items)} images listed.", Qgis.Info)
 
     def process_stac_load(self):
-        """Executa o carregamento da imagem selecionada no SpinBox."""
+        """Loads the selected item from spinbox."""
         data_inicio = self.dateEdit_inicio.date().toString("yyyy-MM-dd")
         data_final = self.dateEdit_final.date().toString("yyyy-MM-dd")
         composicao = self.comboBox_composicao.currentText()
@@ -169,7 +174,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         items = self.loader.search_images(bbox, data_inicio, data_final)
 
         if not items or indice >= len(items):
-            iface.messageBar().pushMessage("Erro", "Seleção inválida.", Qgis.Critical)
+            iface.messageBar().pushMessage("Error", "Invalid selection.", Qgis.Critical)
             return
 
         selected_item = items[indice]
