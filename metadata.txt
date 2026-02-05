@@ -10,7 +10,7 @@ version=0.4
 author=Vagner Teixeira
 email=junior.vagner@live.com
 about=A QGIS plugin designed for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It features pre-configured band compositions and loads images directly as VRT layers.
-tracker=http://bugs
+tracker=https://github.com/vagnertxr/sentinel_stac_loader/issues
 repository=https://github.com/vagnertxr/sentinel_stac_loader
 
 # End of mandatory metadata
@@ -24,7 +24,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=python
 
-homepage=http://homepage
+homepage=https://github.com/vagnertxr/sentinel_stac_loader
 category=Plugins
 icon=icon.png
 # experimental flag
