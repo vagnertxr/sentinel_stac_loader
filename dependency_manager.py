@@ -58,7 +58,6 @@ class DependencyManager:
         
 
         if os.name == 'nt':
-            import subprocess 
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 

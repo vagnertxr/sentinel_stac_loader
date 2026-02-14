@@ -177,7 +177,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
     def process_stac_load(self):
         """Loads image from local cache (last_items)."""
         if not self.last_items:
-            iface.messageBar().pushMessage("Error", "Click 'List avaliable images' before trying to load.", Qgis.Warning)
+            iface.messageBar().pushMessage("Error", "Click 'List available images' before trying to load.", Qgis.Warning)
             return
 
         indice = self.spinBox_indice.value()
