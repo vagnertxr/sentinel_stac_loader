@@ -107,7 +107,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
                 "Shortwave IR / Wildfires (B12, B08, B03)": ['B12', 'B08', 'B03']
             }
 
-        elif "Landsat 8" in satelite:
+        elif "Landsat" in satelite:
             self.loader.collection = "landsat-c2-l2"
             self.loader.compositions = {
                 "True Color (R, G, B)": ['red', 'green', 'blue'],
@@ -115,19 +115,11 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
                 "Agriculture (SWIR1, NIR, B)": ['swir16', 'nir08', 'blue'],
                 "Geology (SWIR2, SWIR1, B)": ['swir22', 'swir16', 'blue'],
                 "Urban / Soil (SWIR2, SWIR1, R)": ['swir22', 'swir16', 'red'],
-                "Bathymetric (G, R, Coastal)": ['green', 'red', 'coastal']
-            }
-        elif "Landsat 5" in satelite or "Landsat 7" in satelite:
-            self.loader.collection = "landsat-c2-l2"
-            self.loader.compositions = {
-                "True Color (R, G, B)": ['red', 'green', 'blue'],
-                "False Color NIR (NIR, R, G)": ['nir', 'red', 'green'],
-                "Agriculture (SWIR1, NIR, B)": ['swir1', 'nir', 'blue'],
-                "Geology (SWIR2, SWIR1, R)": ['swir2', 'swir1', 'red'],
+                "Bathymetric (G, R, Coastal)": ['green', 'red', 'coastal'],
                 "Shortwave IR / Wildfires (SWIR2, NIR, G)": ['swir2', 'nir', 'green'],
                 "Atmospheric Penetration": ['swir2', 'swir1', 'nir']
             }
-        
+                    
         self.comboBox_composicao.clear()
         self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
 
@@ -145,7 +137,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         items = self.loader.search_images(bbox, data_inicio, data_final)
         
         if not items:
-            iface.messageBar().pushMessage("STAC", "No image found for selected parameters.", Qgis.Warning)
+            iface.messageBar().pushMessage("Quick VRT Imagery Loader", "No image found for selected parameters.", Qgis.Warning)
             return
 
         self.tableWidget.setRowCount(0)
@@ -161,7 +153,7 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
             self.tableWidget.setItem(idx, 3, QtWidgets.QTableWidgetItem(img_id))
             
         self.tableWidget.resizeColumnsToContents()
-        iface.messageBar().pushMessage("Success", f"{len(items)} images listed.", Qgis.Info)
+        iface.messageBar().pushMessage("Quick VRT Imagery Loader", f"{len(items)} images listed.", Qgis.Info)
 
     def process_stac_load(self):
         """Loads the selected item from spinbox."""
@@ -178,5 +170,5 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
             return
 
         selected_item = items[indice]
-        iface.messageBar().pushMessage("STAC", f"Carregando {self.loader.collection}...")
+        iface.messageBar().pushMessage("Quick VRT Imagery Loader", f"Loading {self.loader.collection}...")
         self.loader.load_vrt(selected_item, composicao)

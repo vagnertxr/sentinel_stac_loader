@@ -159,12 +159,15 @@
     <rect>
      <x>305</x>
      <y>680</y>
-     <width>50</width>
+     <width>70</width>
      <height>30</height>
     </rect>
    </property>
    <property name="toolTip">
     <string>0 = Imagem mais limpa, 1 = Segunda melhor, etc.</string>
+   </property>
+   <property name="maximum">
+    <number>9999</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_hint">
@@ -276,17 +279,7 @@
    </item>
    <item>
     <property name="text">
-     <string>Landsat 8/9</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Landsat 7</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Landsat 5</string>
+     <string>Landsat Collection 2 Level-2</string>
     </property>
    </item>
   </widget>
