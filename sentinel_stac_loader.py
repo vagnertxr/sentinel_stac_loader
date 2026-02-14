@@ -21,11 +21,13 @@
  *                                                                         *
  ***************************************************************************/
 """
+
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from .resources import *
 from .sentinel_stac_loader_dialog import SentinelSTACDialog
+from .dependency_manager import DependencyManager
 import os.path
 
 class SentinelSTAC:
@@ -34,6 +36,12 @@ class SentinelSTAC:
     def __init__(self, iface):
         """Constructor."""
         self.iface = iface
+        self.deps = {
+    'pystac-client': 'pystac_client',        # Pip: pystac-client | Import: pystac_client
+    'planetary-computer': 'planetary_computer', # Pip: planetary-computer | Import: planetary_computer
+    'shapely': 'shapely'                     # Pip: shapely | Import: shapely
+                    }
+        self.dep_manager = DependencyManager(self.iface, "Quick VRT Imagery Loader", self.deps)
         self.plugin_dir = os.path.dirname(__file__)
         self.dlg = None 
         locale = QSettings().value('locale/userLocale')[0:2]
@@ -90,6 +98,17 @@ class SentinelSTAC:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
         
+        self.dependencies_ok = self.dep_manager.check_and_install()
+        
+        if self.dependencies_ok:
+            # Cria botões e menus normalmente
+            pass
+        else:
+            self.iface.messageBar().pushMessage(
+                "Atenção", "O plugin não funcionará corretamente sem as dependências.", 
+                level=Qgis.Warning
+            )
+
         icon_path = ':/plugins/sentinel_stac_loader/icon.png'
         self.add_action(
             icon_path,
