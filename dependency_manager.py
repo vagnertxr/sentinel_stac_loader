@@ -100,7 +100,7 @@ class DependencyInstallDialog(QDialog):
     """Interface"""
     def __init__(self, parent, packages, plugin_name):
         super().__init__(parent)
-        self.setWindowTitle(f"{plugin_name} - Dependências")
+        self.setWindowTitle(f"{plugin_name} - Dependencies")
         self.setMinimumWidth(400)
         layout = QVBoxLayout(self)
        
