@@ -56,38 +56,49 @@ class DependencyManager:
         return False
 
     def _install_packages(self, packages):
-        progress = QProgressDialog("Instalando bibliotecas...", "Cancelar", 0, len(packages), self.iface.mainWindow())
-        progress.setWindowTitle(self.plugin_name)
-        progress.setWindowModality(Qt.WindowModal)
-        progress.show()
-
-        # Flag para esconder o terminal no Windows
+        # 1. INICIALIZE SEMPRE COMO NONE (Isso evita o NameError)
         startupinfo = None
+        
+        # 2. SÓ ATRIBUA VALOR SE FOR WINDOWS
         if os.name == 'nt':
+            import subprocess # Garantir que o import está acessível
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            # Opcional: startupinfo.wShowWindow = 0 (SW_HIDE)
+
+        progress = QProgressDialog("Instalando dependências...", "Cancelar", 0, len(packages), self.iface.mainWindow())
+        progress.setAutoClose(True)
+        progress.show()
 
         for i, pkg in enumerate(packages):
-            if progress.wasCanceled(): break
+            if progress.wasCanceled(): 
+                break
+                
             progress.setLabelText(f"Baixando e instalando {pkg}...")
+            progress.setValue(i)
             QApplication.processEvents()
 
             try:
-                # --user é essencial para evitar erro de 'Acesso Negado' em C:\Program Files
+                # O startupinfo=startupinfo agora funcionará em qualquer SO
+                # Se for None (Linux), o subprocess apenas ignora.
                 subprocess.run(
                     [self._python_exe, "-m", "pip", "install", "--user", pkg],
                     startupinfo=startupinfo,
                     capture_output=True,
-                    check=True
+                    check=True,
+                    text=True # Útil para ler o erro se houver
                 )
             except Exception as e:
-                QgsMessageLog.logMessage(f"Falha ao instalar {pkg}: {str(e)}", self.plugin_name, Qgis.Critical)
-                QMessageBox.critical(self.iface.mainWindow(), "Erro de Instalação", 
-                                   f"Não foi possível instalar {pkg}.\n\nErro: {str(e)}")
+                progress.close()
+                QgsMessageLog.logMessage(f"Erro ao instalar {pkg}: {str(e)}", self.plugin_name, Qgis.Critical)
+                QMessageBox.critical(self.iface.mainWindow(), "Erro de Instalação", f"Falha em {pkg}: {str(e)}")
                 return False
-        
-        QMessageBox.information(self.iface.mainWindow(), "Sucesso", 
-                               "Dependências instaladas com sucesso! Você já pode usar o plugin.")
+
+        progress.setValue(len(packages))
+        progress.close()
+        QApplication.processEvents()
+
+        QMessageBox.information(self.iface.mainWindow(), "Sucesso", "Dependências instaladas com sucesso!")
         return True
 
 class DependencyInstallDialog(QDialog):
