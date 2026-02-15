@@ -1,5 +1,5 @@
 # Quick VRT Imagery Loader
-Version 0.4
+Version 0.5
 
 A QGIS plugin designed for searching and loading satellite imagery via the **Microsoft Planetary Computer STAC API**. This tool optimizes the remote sensing workflow by providing pre-configured band compositions and loading imagery directly as Virtual Rasters (VRT).
 

@@ -46,16 +46,24 @@ class SentinelSTAC:
         self.plugin_dir = os.path.dirname(__file__)
         self.dlg = None 
         
-        locale = QSettings().value('locale/userLocale')[0:2]
+        user_locale = QSettings().value('locale/userLocale') or 'en'
+        locale = str(user_locale)[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'SentinelSTAC_{}.qm'.format(locale))
+            '{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
-            self.translator.load(locale_path)
-            QCoreApplication.installTranslator(self.translator)
+            if self.translator.load(locale_path):
+                QCoreApplication.installTranslator(self.translator)
+                QgsMessageLog.logMessage(
+                    'Quick VRT Imagery Loader: loaded translation {}'.format(locale_path),
+                    'Quick VRT Imagery Loader', Qgis.Info)
+        else:
+            QgsMessageLog.logMessage(
+                'Quick VRT Imagery Loader: no translation for locale "{}", tried {}'.format(locale, locale_path),
+                'Quick VRT Imagery Loader', Qgis.Info)
             
         self.actions = []
         self.menu = self.tr(u'&Quick VRT Imagery Loader')
