@@ -21,29 +21,21 @@
  *                                                                         *
  ***************************************************************************/
 """
-
 import os.path
-
-# 1. Imports padrão do QGIS e Qt (Seguros: não dependem de libs externas)
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.core import Qgis, QgsMessageLog
-
-# 2. Import do seu gerenciador (Certifique-se que o manager NÃO importa pystac no topo dele)
 from .dependency_manager import DependencyManager
-
-# OBS: NUNCA importe o SentinelSTACDialog aqui no topo.
-# Isso causaria o erro de importação no Windows assim que o QGIS abrisse.
+from . import resources
 
 class SentinelSTAC:
-    """Implementação do Plugin QGIS."""
+    """QGIS plugin implementation."""
 
     def __init__(self, iface):
-        """Construtor."""
+        """Constructor."""
         self.iface = iface
         
-        # Mapeamento correto: 'nome-no-pip': 'modulo_para_import'
         self.deps = {
             'pystac-client': 'pystac_client',
             'planetary-computer': 'planetary_computer',
@@ -54,7 +46,6 @@ class SentinelSTAC:
         self.plugin_dir = os.path.dirname(__file__)
         self.dlg = None 
         
-        # Tradução
         locale = QSettings().value('locale/userLocale')[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
@@ -70,7 +61,7 @@ class SentinelSTAC:
         self.menu = self.tr(u'&Quick VRT Imagery Loader')
 
     def tr(self, message):
-        """API de tradução do Qt."""
+        """Qt translation API"""
         return QCoreApplication.translate('SentinelSTAC', message)
 
     def add_action(
@@ -83,7 +74,7 @@ class SentinelSTAC:
         add_to_toolbar=True,
         status_tip=None,
         parent=None):
-        """Adiciona uma ação à barra de ferramentas e menu."""
+        """Menu and toolbar action"""
 
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
@@ -103,51 +94,45 @@ class SentinelSTAC:
         return action
 
     def initGui(self):
-        """Inicializa a interface do plugin no QGIS."""
-        
-        # Verifica dependências no início
-        # No Windows, isso abrirá o diálogo se algo faltar
+        """Starts the plugin GUI."""
+        # Verify dependencies at startup
         self.dependencies_ok = self.dep_manager.check_and_install()
         
-        icon_path = os.path.join(self.plugin_dir, 'icon.png') # Ajuste se usar resources
+        icon_path = ":/plugins/sentinel_stac_loader/icon.png"
         
         self.main_action = self.add_action(
             icon_path,
-            text=self.tr(u'Abrir Sentinel STAC Loader'),
+            text=self.tr(u'Loads satellite images quickly'),
             callback=self.run,
-            enabled_flag=self.dependencies_ok, # Desativa o botão se não houver deps
+            enabled_flag=self.dependencies_ok,
             parent=self.iface.mainWindow())
 
         if not self.dependencies_ok:
             self.iface.messageBar().pushMessage(
-                "Atenção", 
-                "Dependências ausentes. Clique no ícone do plugin para tentar instalar novamente.", 
+                "Attention", 
+                "Missing dependencies. Click on the plugin icon to try again.", 
                 level=Qgis.Warning,
                 duration=5
             )
 
     def unload(self):
-        """Remove o plugin do QGIS."""
+        """Removes the plugin from QGIS."""
         for action in self.actions:
             self.iface.removePluginMenu(self.menu, action)
             self.iface.removeToolBarIcon(action)
 
     def run(self):
-        """Executa a lógica principal do plugin."""
+        """Executes the plugin logic."""
         
-        # Re-checa antes de rodar (caso o usuário tenha tentado instalar e falhado)
+    
         if not self.dep_manager.check_and_install():
             return
 
-        # --- LAZY IMPORT (Importação Tardia) ---
-        # Só importamos o Dialog aqui dentro para evitar que o erro 
-        # de importação aconteça no carregamento do QGIS.
+        # Lazy import the dialog to avoid import errors when QGIS loads.
         from .sentinel_stac_loader_dialog import SentinelSTACDialog
         
         if self.dlg is None:
             self.dlg = SentinelSTACDialog()
-            # Conexão de sinais dos botões do seu .ui
-            # Certifique-se que esses nomes batem com o seu Qt Designer
             if hasattr(self.dlg, 'btn_carregar'):
                 self.dlg.btn_carregar.clicked.connect(self.dlg.process_stac_load)
             if hasattr(self.dlg, 'btn_listar'):
