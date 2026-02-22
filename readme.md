@@ -5,6 +5,8 @@ A QGIS plugin designed for searching and loading satellite imagery via the **Mic
 
 Developed with Python and the QGIS Plugin Builder tool.
 
+This plugin is available on the QGIS official plugin repository: https://plugins.qgis.org/plugins/sentinel_stac_loader/
+
 ## Installation
 
 Download the `.zip` file from this repository.
@@ -19,10 +21,13 @@ You may use the Install from ZIP option on your QGIS plugin manager or Extract t
    `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins`
 
 ## Dependencies
+
 The plugin requires the following Python libraries installed within your QGIS environment:
 - `pystac-client`
 - `planetary-computer`
 - `shapely`
+
+A script was implemented to search and install dependencies automatically, so it is no longer necessary to install the dependencies manually. But, if needed, this is how to install them:
 
 #### **Windows (via OSGeo4W Shell)**
 Open the **OSGeo4W Shell** as Administrator and run:
