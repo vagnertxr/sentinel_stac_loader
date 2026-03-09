@@ -18,7 +18,7 @@ repository=https://github.com/vagnertxr/sentinel_stac_loader
 hasProcessingProvider=no
 
 changelog=
-    0.6 - Added QGIS 4.x / Qt6 compatibility (PyQt5 imports replaced with qgis.PyQt)
+    0.6 - Added QGIS 4.x / Qt6 compatibility, previews, max cloud slider, revamped UI
     0.5 - Better UI, dependency manager, Portuguese language support, better icon
     0.4 - Initial public release
 

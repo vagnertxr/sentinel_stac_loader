@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>660</width>
-    <height>800</height>
+    <width>860</width>
+    <height>780</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,42 +17,98 @@
    <iconset>
     <normaloff>icon.png</normaloff>icon.png</iconset>
   </property>
-  <widget class="QLabel" name="label_7">
+  <widget class="QLabel" name="label_title">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>20</y>
-     <width>621</width>
-     <height>31</height>
+     <y>16</y>
+     <width>820</width>
+     <height>30</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:16pt; font-weight:600;&quot;&gt;Quick VRT Imagery Loader&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:15pt; font-weight:600;&quot;&gt;Quick VRT Imagery Loader&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_2">
+  <widget class="QLabel" name="label_subtitle">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>50</y>
-     <width>561</width>
-     <height>41</height>
+     <width>820</width>
+     <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Select parameters for searching images in the current map extent.</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; color:#686868;&quot;&gt;Select parameters for searching images in the current map extent.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_3">
+  <widget class="Line" name="line_header">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>100</y>
-     <width>120</width>
-     <height>25</height>
+     <y>78</y>
+     <width>820</width>
+     <height>2</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Orientation::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_section_params">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>90</y>
+     <width>820</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:8pt; color:#888888; font-weight:600; text-transform:uppercase; letter-spacing:1px;&quot;&gt;IMAGE PARAMETERS&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_satellite">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>116</y>
+     <width>80</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Satellite:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox_satelite">
+   <property name="geometry">
+    <rect>
+     <x>104</x>
+     <y>116</y>
+     <width>270</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>Sentinel-2</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Landsat Collection 2 Level-2</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QLabel" name="label_composition">
+   <property name="geometry">
+    <rect>
+     <x>392</x>
+     <y>116</y>
+     <width>100</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="text">
@@ -62,20 +118,20 @@
   <widget class="QComboBox" name="comboBox_composicao">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>100</y>
-     <width>491</width>
-     <height>30</height>
+     <x>496</x>
+     <y>116</y>
+     <width>344</width>
+     <height>28</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="label_4">
+  <widget class="QLabel" name="label_start_date">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>150</y>
-     <width>120</width>
-     <height>25</height>
+     <y>162</y>
+     <width>80</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="text">
@@ -85,15 +141,15 @@
   <widget class="QDateEdit" name="dateEdit_inicio">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>150</y>
-     <width>150</width>
-     <height>30</height>
+     <x>104</x>
+     <y>162</y>
+     <width>140</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="dateTime">
     <datetime>
-     <hour>0</hour>
+     <hour>6</hour>
      <minute>0</minute>
      <second>0</second>
      <year>2021</year>
@@ -105,13 +161,13 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="label_5">
+  <widget class="QLabel" name="label_end_date">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>200</y>
-     <width>120</width>
-     <height>25</height>
+     <x>260</x>
+     <y>162</y>
+     <width>72</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="text">
@@ -121,15 +177,15 @@
   <widget class="QDateEdit" name="dateEdit_final">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>200</y>
-     <width>150</width>
-     <height>30</height>
+     <x>336</x>
+     <y>162</y>
+     <width>140</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="dateTime">
     <datetime>
-     <hour>0</hour>
+     <hour>6</hour>
      <minute>0</minute>
      <second>0</second>
      <year>2026</year>
@@ -141,84 +197,119 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="label_6">
+  <widget class="QLabel" name="label_clouds">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>680</y>
-     <width>121</width>
-     <height>30</height>
+     <x>496</x>
+     <y>162</y>
+     <width>90</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Choose image:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Max clouds:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="spinBox_indice">
+  <widget class="QSlider" name="slider_clouds">
    <property name="geometry">
     <rect>
-     <x>305</x>
-     <y>680</y>
-     <width>70</width>
-     <height>30</height>
+     <x>590</x>
+     <y>166</y>
+     <width>190</width>
+     <height>24</height>
     </rect>
    </property>
    <property name="toolTip">
-    <string>0 = Imagem mais limpa, 1 = Segunda melhor, etc.</string>
+    <string>Filter images by maximum cloud cover percentage</string>
+   </property>
+   <property name="minimum">
+    <number>0</number>
    </property>
    <property name="maximum">
-    <number>9999</number>
+    <number>100</number>
+   </property>
+   <property name="value">
+    <number>100</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Orientation::Horizontal</enum>
    </property>
   </widget>
-  <widget class="QLabel" name="label_hint">
+  <widget class="QLabel" name="label_clouds_value">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>720</y>
-     <width>621</width>
-     <height>21</height>
+     <x>790</x>
+     <y>162</y>
+     <width>48</width>
+     <height>28</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; color:#686868;&quot;&gt;The images are listed by cloud cover percentage, starting from 0% (lowest to highest)&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>100%</string>
    </property>
-   <property name="wordWrap">
-    <bool>true</bool>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="btn_carregar">
+  <widget class="QPushButton" name="btn_listar">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>750</y>
-     <width>300</width>
-     <height>41</height>
+     <x>270</x>
+     <y>208</y>
+     <width>320</width>
+     <height>36</height>
     </rect>
    </property>
    <property name="styleSheet">
     <string>font-weight: bold; font-size: 10pt;</string>
    </property>
    <property name="text">
-    <string>Load image</string>
+    <string>List available images</string>
+   </property>
+  </widget>
+  <widget class="Line" name="line_results">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>254</y>
+     <width>820</width>
+     <height>2</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Orientation::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_section_results">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>262</y>
+     <width>511</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:8pt; color:#888888; font-weight:600;&quot;&gt;RESULTS&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QTableWidget" name="tableWidget">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>290</y>
-     <width>621</width>
-     <height>381</height>
+     <y>286</y>
+     <width>490</width>
+     <height>390</height>
     </rect>
    </property>
    <property name="editTriggers">
-    <set>QAbstractItemView::NoEditTriggers</set>
+    <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
    </property>
    <property name="selectionMode">
-    <enum>QAbstractItemView::SingleSelection</enum>
+    <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
    </property>
    <property name="selectionBehavior">
-    <enum>QAbstractItemView::SelectRows</enum>
+    <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
    </property>
    <property name="columnCount">
     <number>4</number>
@@ -247,53 +338,230 @@
     </property>
    </column>
   </widget>
-  <widget class="QPushButton" name="btn_listar">
+  <widget class="QFrame" name="frame_thumbnail">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>240</y>
-     <width>300</width>
-     <height>40</height>
+     <x>526</x>
+     <y>286</y>
+     <width>314</width>
+     <height>390</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Shape::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Shadow::Sunken</enum>
+   </property>
+   <widget class="QLabel" name="lbl_thumbnail">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>0</y>
+      <width>298</width>
+      <height>280</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string>background-color: #1e1e1e; border-radius: 4px; color: #888888;</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; color:#888888;&quot;&gt;Select an image&lt;br/&gt;to preview&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_thumb_date">
+    <property name="geometry">
+     <rect>
+      <x>8</x>
+      <y>318</y>
+      <width>148</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string>color: #555555; font-size: 8pt;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_thumb_clouds">
+    <property name="geometry">
+     <rect>
+      <x>158</x>
+      <y>318</y>
+      <width>148</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string>color: #3a86ff; font-size: 9pt; font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_thumb_status">
+    <property name="geometry">
+     <rect>
+      <x>8</x>
+      <y>290</y>
+      <width>298</width>
+      <height>14</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string>color: #aaaaaa; font-size: 8pt; font-style: italic;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lbl_thumb_id">
+    <property name="geometry">
+     <rect>
+      <x>8</x>
+      <y>350</y>
+      <width>262</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>monospace</family>
+      <pointsize>6</pointsize>
+     </font>
+    </property>
+    <property name="toolTip">
+     <string>Full image ID — hover to read, click 📋 to copy</string>
+    </property>
+    <property name="styleSheet">
+     <string>color: #606060; font-size: 6pt; font-family: monospace;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="btn_copy_id">
+    <property name="geometry">
+     <rect>
+      <x>275</x>
+      <y>350</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Copy image ID to clipboard</string>
+    </property>
+    <property name="styleSheet">
+     <string>font-size: 10pt; border: none; background: transparent; color: #777777;</string>
+    </property>
+    <property name="text">
+     <string>📋</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="Line" name="line_load">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>686</y>
+     <width>820</width>
+     <height>2</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Orientation::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_choose">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>700</y>
+     <width>120</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Choose image:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_indice">
+   <property name="geometry">
+    <rect>
+     <x>144</x>
+     <y>700</y>
+     <width>88</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>0 = Cleanest image, 1 = Second best, etc.</string>
+   </property>
+   <property name="maximum">
+    <number>9999</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_hint">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>740</y>
+     <width>400</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#888888; font-size:8pt; font-style:italic;&quot;&gt;Sorted by cloud cover, lowest to highest. Click a row to preview.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btn_carregar">
+   <property name="geometry">
+    <rect>
+     <x>526</x>
+     <y>710</y>
+     <width>314</width>
+     <height>36</height>
     </rect>
    </property>
    <property name="styleSheet">
     <string>font-weight: bold; font-size: 10pt;</string>
    </property>
    <property name="text">
-    <string>List available images</string>
+    <string>Load image</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_satelite">
+  <widget class="QLabel" name="label_section_results_2">
    <property name="geometry">
     <rect>
-     <x>360</x>
-     <y>200</y>
-     <width>261</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <item>
-    <property name="text">
-     <string>Sentinel-2</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Landsat Collection 2 Level-2</string>
-    </property>
-   </item>
-  </widget>
-  <widget class="QLabel" name="label_8">
-   <property name="geometry">
-    <rect>
-     <x>370</x>
-     <y>170</y>
-     <width>241</width>
-     <height>25</height>
+     <x>530</x>
+     <y>262</y>
+     <width>511</width>
+     <height>18</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Satellite:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:8pt; font-weight:600; color:#888888;&quot;&gt;PREVIEW&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
  </widget>

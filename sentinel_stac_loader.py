@@ -29,7 +29,12 @@ from qgis.core import Qgis, QgsMessageLog
 from .dependency_manager import DependencyManager
 from . import resources
 
-
+# ── Enum compatibility: Qgis.MessageLevel (QGIS 4/Qt6) vs Qgis.* (QGIS 3/Qt5)
+# In QGIS 3.x the message level constants live directly on Qgis (Qgis.Info,
+# Qgis.Warning, Qgis.Critical, Qgis.Success).
+# In QGIS 4.x they were moved to the Qgis.MessageLevel enum class.
+# The helper below abstracts that difference so the rest of the code
+# can always use MsgLevel.Info, MsgLevel.Warning, etc.
 try:
     # QGIS 4.x / Qt6
     _ml = Qgis.MessageLevel
@@ -165,4 +170,5 @@ class SentinelSTAC:
 
         self.dlg.show()
         # exec_() was renamed to exec() in Qt6/PyQt6.
+        # QDialog.exec() exists in both Qt5 and Qt6, so use it unconditionally.
         self.dlg.exec()

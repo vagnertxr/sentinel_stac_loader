@@ -22,12 +22,11 @@ except AttributeError:
         Critical = Qgis.Critical
         Success  = Qgis.Success
 
-# In PyQt6 the enum was moved: QDialog.DialogCode.Accepted
-# qgis.PyQt handles most of this, but we guard here just in case.
+
 try:
-    _ACCEPTED = QDialog.DialogCode.Accepted   # PyQt6
+    _ACCEPTED = QDialog.DialogCode.Accepted   
 except AttributeError:
-    _ACCEPTED = QDialog.Accepted              # PyQt5
+    _ACCEPTED = QDialog.Accepted              
 
 class DependencyManager:
     def __init__(self, iface, plugin_name, dependencies):
