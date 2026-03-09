@@ -29,6 +29,23 @@ from qgis.core import Qgis, QgsMessageLog
 from .dependency_manager import DependencyManager
 from . import resources
 
+
+try:
+    # QGIS 4.x / Qt6
+    _ml = Qgis.MessageLevel
+    class MsgLevel:
+        Info     = _ml.Info
+        Warning  = _ml.Warning
+        Critical = _ml.Critical
+        Success  = _ml.Success
+except AttributeError:
+    # QGIS 3.x / Qt5
+    class MsgLevel:
+        Info     = Qgis.Info
+        Warning  = Qgis.Warning
+        Critical = Qgis.Critical
+        Success  = Qgis.Success
+
 class SentinelSTAC:
     """QGIS plugin implementation."""
 
@@ -59,11 +76,11 @@ class SentinelSTAC:
                 QCoreApplication.installTranslator(self.translator)
                 QgsMessageLog.logMessage(
                     'Quick VRT Imagery Loader: loaded translation {}'.format(locale_path),
-                    'Quick VRT Imagery Loader', Qgis.Info)
+                    'Quick VRT Imagery Loader', MsgLevel.Info)
         else:
             QgsMessageLog.logMessage(
                 'Quick VRT Imagery Loader: no translation for locale "{}", tried {}'.format(locale, locale_path),
-                'Quick VRT Imagery Loader', Qgis.Info)
+                'Quick VRT Imagery Loader', MsgLevel.Info)
             
         self.actions = []
         self.menu = self.tr(u'&Quick VRT Imagery Loader')
@@ -119,7 +136,7 @@ class SentinelSTAC:
             self.iface.messageBar().pushMessage(
                 "Attention", 
                 "Missing dependencies. Click on the plugin icon to try again.", 
-                level=Qgis.Warning,
+                level=MsgLevel.Warning,
                 duration=5
             )
 
@@ -147,4 +164,5 @@ class SentinelSTAC:
                 self.dlg.btn_listar.clicked.connect(self.dlg.popular_tabela)
 
         self.dlg.show()
-        self.dlg.exec_()
+        # exec_() was renamed to exec() in Qt6/PyQt6.
+        self.dlg.exec()

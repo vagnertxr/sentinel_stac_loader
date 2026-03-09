@@ -1,12 +1,13 @@
 [general]
 name=Quick VRT Imagery Loader
 qgisMinimumVersion=3.0
+qgisMaximumVersion=4.99
 description=Loads satellite images from Microsoft Planetary Computer STAC API quickly
-version=0.5
+version=0.6
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
-about=Plugin for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It lists pre-configured compositions and loads images as VRT.
+about=Plugin for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It lists pre-configured compositions and loads images as VRT. Supports Sentinel-2 and Landsat collections with multiple band compositions (True Color, False Color NIR/SWIR, Agriculture, Geology, Urban, Bathymetric, and more). Compatible with QGIS 3.x (Qt5) and QGIS 4.x (Qt6).
 
 tracker=https://github.com/vagnertxr/sentinel_stac_loader/issues
 repository=https://github.com/vagnertxr/sentinel_stac_loader
@@ -15,11 +16,14 @@ repository=https://github.com/vagnertxr/sentinel_stac_loader
 # Recommended items:
 
 hasProcessingProvider=no
-# Uncomment the following line and add your changelog:
-# changelog=
+
+changelog=
+    0.6 - Added QGIS 4.x / Qt6 compatibility (PyQt5 imports replaced with qgis.PyQt)
+    0.5 - Better UI, dependency manager, Portuguese language support, better icon
+    0.4 - Initial public release
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python, raster, satellite, sentinel, landsat, stac, vrt, remote sensing, planetary computer, imagery
 
 homepage=https://github.com/vagnertxr/sentinel_stac_loader
 category=Raster

@@ -3,10 +3,14 @@
 # Resource object code
 #
 # Created by: The Resource Compiler for PyQt5 (Qt v5.15.18)
+# Updated for Qt5/Qt6 compatibility (QGIS 3.x and 4.x)
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore
+# qgis.PyQt redirects automatically to PyQt5 (QGIS 3/Qt5)
+# or PyQt6 (QGIS 4/Qt6) depending on the build in use.
+# Never import PyQt5 or PyQt6 directly in QGIS plugins.
+from qgis.PyQt import QtCore
 
 qt_resource_data = b"\
 \x00\x00\x1c\x6e\
@@ -503,6 +507,7 @@ qt_resource_struct_v2 = b"\
 "
 
 qt_version = [int(v) for v in QtCore.qVersion().split('.')]
+# Qt 5.8+ and all Qt 6.x use rcc_version 2
 if qt_version < [5, 8, 0]:
     rcc_version = 1
     qt_resource_struct = qt_resource_struct_v1

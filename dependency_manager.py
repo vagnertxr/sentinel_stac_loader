@@ -8,6 +8,27 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.PyQt.QtCore import Qt
 
+try:
+    _ml = Qgis.MessageLevel
+    class MsgLevel:
+        Info     = _ml.Info
+        Warning  = _ml.Warning
+        Critical = _ml.Critical
+        Success  = _ml.Success
+except AttributeError:
+    class MsgLevel:
+        Info     = Qgis.Info
+        Warning  = Qgis.Warning
+        Critical = Qgis.Critical
+        Success  = Qgis.Success
+
+# In PyQt6 the enum was moved: QDialog.DialogCode.Accepted
+# qgis.PyQt handles most of this, but we guard here just in case.
+try:
+    _ACCEPTED = QDialog.DialogCode.Accepted   # PyQt6
+except AttributeError:
+    _ACCEPTED = QDialog.Accepted              # PyQt5
+
 class DependencyManager:
     def __init__(self, iface, plugin_name, dependencies):
         self.iface = iface
@@ -47,20 +68,17 @@ class DependencyManager:
         if not missing:
             return True
 
-
         dialog = DependencyInstallDialog(self.iface.mainWindow(), missing, self.plugin_name)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == _ACCEPTED:
             return self._install_packages(missing)
         return False
 
     def _install_packages(self, packages):
         startupinfo = None
-        
 
         if os.name == 'nt':
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
 
         progress = QProgressDialog("Installing dependencies...", "Cancel", 0, len(packages), self.iface.mainWindow())
         progress.setAutoClose(True)
@@ -84,7 +102,7 @@ class DependencyManager:
                 )
             except Exception as e:
                 progress.close()
-                QgsMessageLog.logMessage(f"Error installing {pkg}: {str(e)}", self.plugin_name, Qgis.Critical)
+                QgsMessageLog.logMessage(f"Error installing {pkg}: {str(e)}", self.plugin_name, MsgLevel.Critical)
                 QMessageBox.critical(self.iface.mainWindow(), "Install error", f"Failure in {pkg}: {str(e)}")
                 return False
 
