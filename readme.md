@@ -1,5 +1,4 @@
 # Quick VRT Imagery Loader
-Version 0.5
 
 A QGIS plugin designed for searching and loading satellite imagery via the **Microsoft Planetary Computer STAC API**. This tool optimizes the remote sensing workflow by providing pre-configured band compositions and loading imagery directly as Virtual Rasters (VRT).
 
@@ -27,7 +26,7 @@ The plugin requires the following Python libraries installed within your QGIS en
 - `planetary-computer`
 - `shapely`
 
-A script was implemented to search and install dependencies automatically, so it is no longer necessary to install the dependencies manually. But, if needed, this is how to install them:
+Dependency installation is handled automatically by the plugin. Manual installation should not be necessary, but if needed, here is how to do it:
 
 #### **Windows (via OSGeo4W Shell)**
 Open the **OSGeo4W Shell** as Administrator and run:
