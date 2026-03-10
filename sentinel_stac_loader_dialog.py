@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from qgis.PyQt import uic, QtWidgets
-from qgis.PyQt.QtCore import QThread, pyqtSignal, Qt
+from qgis.PyQt.QtCore import QThread, pyqtSignal, Qt, QCoreApplication
 from qgis.PyQt.QtGui import QPixmap
 from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
@@ -13,7 +13,6 @@ import processing
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sentinel_stac_loader_dialog_base.ui'))
 
-# ── Enum compatibility: Qgis.MessageLevel (QGIS 4/Qt6) vs Qgis.* (QGIS 3/Qt5)
 try:
     _ml = Qgis.MessageLevel
     class MsgLevel:
@@ -28,61 +27,60 @@ except AttributeError:
         Critical = Qgis.Critical
         Success  = Qgis.Success
 
-# ── Qt enum compatibility ─────────────────────────────────────────────────────
 try:
-    _KeepAspectRatio = Qt.AspectRatioMode.KeepAspectRatio       # Qt6
+    _KeepAspectRatio = Qt.AspectRatioMode.KeepAspectRatio
     _SmoothTransform = Qt.TransformationMode.SmoothTransformation
 except AttributeError:
-    _KeepAspectRatio = Qt.KeepAspectRatio                        # Qt5
+    _KeepAspectRatio = Qt.KeepAspectRatio
     _SmoothTransform = Qt.SmoothTransformation
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Worker: thumbnail download
-# ─────────────────────────────────────────────────────────────────────────────
+class SentinelSTACLoader:
+    def __init__(self):
+        self.catalog_url  = "https://planetarycomputer.microsoft.com/api/stac/v1"
+        self.collection   = "sentinel-2-l2a"
+        self.compositions = {}
+
+    def get_canvas_bbox(self):
+        canvas   = iface.mapCanvas()
+        extent   = canvas.extent()
+        crs_src  = canvas.mapSettings().destinationCrs()
+        crs_dest = QgsCoordinateReferenceSystem("EPSG:4326")
+        xform    = QgsCoordinateTransform(crs_src, crs_dest, QgsProject.instance())
+        p1 = xform.transform(extent.xMinimum(), extent.yMinimum())
+        p2 = xform.transform(extent.xMaximum(), extent.yMaximum())
+        return [p1.x(), p1.y(), p2.x(), p2.y()]
+
+
 class ThumbnailWorker(QThread):
-    """Downloads and scales a preview thumbnail in the background."""
     thumbnail_ready = pyqtSignal(QPixmap)
     failed          = pyqtSignal(str)
 
     def __init__(self, url, parent=None):
-        super().__init__(parent)
+        super(ThumbnailWorker, self).__init__(parent)
         self.url = url
 
     def run(self):
         try:
             import urllib.request
-            req = urllib.request.Request(
-                self.url,
-                headers={"User-Agent": "QuickVRTImageryLoader/0.6"}
-            )
+            req = urllib.request.Request(self.url, headers={"User-Agent": "QuickVRTImageryLoader/0.6"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = resp.read()
-
             pixmap = QPixmap()
             if not pixmap.loadFromData(data):
                 self.failed.emit("Could not decode image")
                 return
-
-            # Scale inside the thread — keeps the UI thread free
             pixmap = pixmap.scaled(240, 240, _KeepAspectRatio, _SmoothTransform)
             self.thumbnail_ready.emit(pixmap)
-
         except Exception as e:
             self.failed.emit(str(e)[:60])
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Worker: STAC catalog search
-# ─────────────────────────────────────────────────────────────────────────────
 class SearchWorker(QThread):
-    """Queries the STAC catalog in the background."""
     search_done  = pyqtSignal(list)
     search_error = pyqtSignal(str)
 
-    def __init__(self, catalog_url, collection, bbox,
-                 start_date, end_date, max_clouds, parent=None):
-        super().__init__(parent)
+    def __init__(self, catalog_url, collection, bbox, start_date, end_date, max_clouds, parent=None):
+        super(SearchWorker, self).__init__(parent)
         self.catalog_url = catalog_url
         self.collection  = collection
         self.bbox        = bbox
@@ -101,30 +99,17 @@ class SearchWorker(QThread):
             )
             items = list(search.get_all_items())
             items = sorted(items, key=lambda x: x.properties.get("eo:cloud_cover", 100))
-            items = [i for i in items
-                     if i.properties.get("eo:cloud_cover", 100) <= self.max_clouds]
+            items = [i for i in items if i.properties.get("eo:cloud_cover", 100) <= self.max_clouds]
             self.search_done.emit(items)
-        except ImportError:
-            self.search_error.emit("pystac-client library not found.")
         except Exception as e:
             self.search_error.emit(str(e))
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Worker: URL signing + VRT build
-# ─────────────────────────────────────────────────────────────────────────────
 class VrtWorker(QThread):
-    """Signs band URLs and builds the VRT file in the background.
-
-    QgsRasterLayer and QgsProject.addMapLayer are NOT called here —
-    QGIS objects must always be touched on the main thread.
-    The worker only produces the VRT path and layer name, then emits them.
-    """
-    vrt_ready = pyqtSignal(str, str)   # (vrt_path, layer_name)
+    vrt_ready = pyqtSignal(str, str)
     vrt_error = pyqtSignal(str)
 
     def __init__(self, item, bands, collection, parent=None):
-        super().__init__(parent)
+        super(VrtWorker, self).__init__(parent)
         self.item       = item
         self.bands      = bands
         self.collection = collection
@@ -133,58 +118,25 @@ class VrtWorker(QThread):
         try:
             import planetary_computer
             band_hrefs = []
-
             for band in self.bands:
                 asset = self.item.assets.get(band)
                 if asset:
                     signed_href = planetary_computer.sign(asset.href)
                     band_hrefs.append(f"/vsicurl/{signed_href}")
-
             if not band_hrefs:
-                self.vrt_error.emit("No valid band assets found for this item.")
+                self.vrt_error.emit("No valid band assets found")
                 return
-
-            result     = processing.run("gdal:buildvirtualraster", {
-                'INPUT':    band_hrefs,
-                'SEPARATE': True,
-                'OUTPUT':   'TEMPORARY_OUTPUT'
+            result = processing.run("gdal:buildvirtualraster", {
+                'INPUT': band_hrefs, 'SEPARATE': True, 'OUTPUT': 'TEMPORARY_OUTPUT'
             })
             cloud_pct  = self.item.properties.get("eo:cloud_cover", 0)
             prefix     = "S2" if "sentinel" in self.collection else "LS"
-            layer_name = (f"{prefix}_{self.item.id}_"
-                          f"({cloud_pct:.1f}% Clouds)")
-
+            layer_name = f"{prefix}_{self.item.id}_({cloud_pct:.1f}% Clouds)"
             self.vrt_ready.emit(result['OUTPUT'], layer_name)
-
-        except ImportError:
-            self.vrt_error.emit("planetary-computer library not found.")
         except Exception as e:
             self.vrt_error.emit(str(e))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Data helper — only config and bbox, no network calls
-# ─────────────────────────────────────────────────────────────────────────────
-class SentinelSTACLoader:
-    def __init__(self):
-        self.catalog_url  = "https://planetarycomputer.microsoft.com/api/stac/v1"
-        self.collection   = "sentinel-2-l2a"
-        self.compositions = {}
-
-    def get_canvas_bbox(self):
-        canvas   = iface.mapCanvas()
-        extent   = canvas.extent()
-        crs_src  = canvas.mapSettings().destinationCrs()
-        crs_dest = QgsCoordinateReferenceSystem("EPSG:4326")
-        xform    = QgsCoordinateTransform(crs_src, crs_dest, QgsProject.instance())
-        p1 = xform.transform(extent.xMinimum(), extent.yMinimum())
-        p2 = xform.transform(extent.xMaximum(), extent.yMaximum())
-        return [p1.x(), p1.y(), p2.x(), p2.y()]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Dialog
-# ─────────────────────────────────────────────────────────────────────────────
 class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def __init__(self, parent=None):
@@ -196,16 +148,161 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         self._search_worker = None
         self._vrt_worker    = None
 
+        self._retranslateUi()
+
         self.comboBox_satelite.currentIndexChanged.connect(self.atualizar_parametros_satelite)
         self.tableWidget.cellClicked.connect(self.atualizar_indice_pelo_clique)
         self.slider_clouds.valueChanged.connect(self._atualizar_label_clouds)
 
         self.atualizar_parametros_satelite()
+        self._reset_thumbnail_panel()
 
-    # ── Satellite / composition config ───────────────────────────────────────
+    # Translation helper
+    def tr(self, message):
+        return QCoreApplication.translate('SentinelSTACDialogBase', message)
+
+    def _retranslateUi(self):
+        # Window title
+        self.setWindowTitle(self.tr("Quick VRT Imagery Loader"))
+
+        # Title label (HTML wrapper preserved, only the visible text is translated)
+        self.label_title.setText(
+            '<html><head/><body><p align="center">'
+            '<span style=" font-size:15pt; font-weight:600;">'
+            + self.tr("Quick VRT Imagery Loader") +
+            '</span></p></body></html>'
+        )
+
+        # Subtitle
+        self.label_subtitle.setText(
+            '<html><head/><body><p align="center">'
+            '<span style=" color:#686868;">'
+            + self.tr("Select parameters for searching images in the current map extent.") +
+            '</span></p></body></html>'
+        )
+
+        # Section header — IMAGE PARAMETERS
+        self.label_section_params.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:8pt; color:#888888; font-weight:600;'
+            ' text-transform:uppercase; letter-spacing:1px;">'
+            + self.tr("IMAGE PARAMETERS") +
+            '</span></p></body></html>'
+        )
+
+        # Satellite label
+        self.label_satellite.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:10pt; font-weight:600;">'
+            + self.tr("Satellite:") +
+            '</span></p></body></html>'
+        )
+
+        # Composition label
+        self.label_composition.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:10pt; font-weight:600;">'
+            + self.tr("Composition:") +
+            '</span></p></body></html>'
+        )
+
+        # Start date label
+        self.label_start_date.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:10pt; font-weight:600;">'
+            + self.tr("Start date:") +
+            '</span></p></body></html>'
+        )
+
+        # End date label
+        self.label_end_date.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:10pt; font-weight:600;">'
+            + self.tr("End date:") +
+            '</span></p></body></html>'
+        )
+
+        # Max clouds label
+        self.label_clouds.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:10pt; font-weight:600;">'
+            + self.tr("Max clouds:") +
+            '</span></p></body></html>'
+        )
+
+        # Slider tooltip
+        self.slider_clouds.setToolTip(
+            self.tr("Filter images by maximum cloud cover percentage")
+        )
+
+        # List button
+        self.btn_listar.setText(self.tr("List available images"))
+
+        # Section header — RESULTS
+        self.label_section_results.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:8pt; color:#888888; font-weight:600;">'
+            + self.tr("RESULTS") +
+            '</span></p></body></html>'
+        )
+
+        # Table column headers
+        self.tableWidget.horizontalHeaderItem(0).setText(self.tr("Index"))
+        self.tableWidget.horizontalHeaderItem(1).setText(self.tr("Image date"))
+        self.tableWidget.horizontalHeaderItem(2).setText(self.tr("Clouds (%)"))
+        self.tableWidget.horizontalHeaderItem(3).setText(self.tr("ID"))
+
+        # Section header — PREVIEW
+        self.label_section_results_2.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:8pt; font-weight:600; color:#888888;">'
+            + self.tr("PREVIEW") +
+            '</span></p></body></html>'
+        )
+
+        # Thumbnail placeholder (also reset by _reset_thumbnail_panel on init)
+        self.lbl_thumbnail.setText(
+            '<html><head/><body><p align="center">'
+            '<span style=" color:#888888;">'
+            + self.tr("Select an image to preview") +
+            '</span></p></body></html>'
+        )
+
+        # Image ID tooltip and copy button tooltip
+        self.lbl_thumb_id.setToolTip(
+            self.tr("Full image ID — hover to read, click 📋 to copy")
+        )
+        self.btn_copy_id.setToolTip(
+            self.tr("Copy image ID to clipboard")
+        )
+
+        # Choose image label
+        self.label_choose.setText(
+            '<html><head/><body><p>'
+            '<span style=" font-size:10pt; font-weight:600;">'
+            + self.tr("Choose image:") +
+            '</span></p></body></html>'
+        )
+
+        # SpinBox tooltip
+        self.spinBox_indice.setToolTip(
+            self.tr("0 = Cleanest image, 1 = Second best, etc.")
+        )
+
+        # Hint label
+        self.label_hint.setText(
+            '<html><head/><body><p>'
+            '<span style=" color:#888888; font-size:8pt; font-style:italic;">'
+            + self.tr("Sorted by cloud cover, lowest to highest. Click a row to preview.") +
+            '</span></p></body></html>'
+        )
+
+        # Load button
+        self.btn_carregar.setText(self.tr("Load image"))
+
+    # compositions
     def atualizar_parametros_satelite(self):
         satelite = self.comboBox_satelite.currentText()
-
         if "Sentinel" in satelite:
             self.loader.collection  = "sentinel-2-l2a"
             self.loader.compositions = {
@@ -232,94 +329,65 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
                 "Shortwave IR / Wildfires (SWIR2, NIR, G)":   ['swir22', 'nir08',  'green'],
                 "Atmospheric Penetration (SWIR2, SWIR1, NIR)":['swir22', 'swir16', 'nir08'],
             }
-
         self.comboBox_composicao.clear()
         self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
 
-    # ── Cloud slider label ────────────────────────────────────────────────────
+
     def _atualizar_label_clouds(self, value):
         self.label_clouds_value.setText(f"{value}%")
 
-    # ── UI busy state ─────────────────────────────────────────────────────────
     def _set_ui_busy(self, busy, context="search"):
-        """Disable controls and update button text while a worker is running."""
         self.btn_listar.setEnabled(not busy)
         self.btn_carregar.setEnabled(not busy)
         if context == "search":
-            self.btn_listar.setText("Searching…" if busy else "List available images")
+            self.btn_listar.setText(
+                self.tr("Searching…") if busy else self.tr("List available images")
+            )
         elif context == "load":
-            self.btn_carregar.setText("Loading…" if busy else "Load image")
+            self.btn_carregar.setText(
+                self.tr("Loading…") if busy else self.tr("Load image")
+            )
 
-    # ── Table row click ───────────────────────────────────────────────────────
     def atualizar_indice_pelo_clique(self, row, column):
         self.spinBox_indice.setValue(row)
         self._carregar_thumbnail(row)
 
-    # ── Thumbnail ─────────────────────────────────────────────────────────────
+
     def _carregar_thumbnail(self, row):
-        if row < 0 or row >= len(self.last_items):
-            return
-
+        if row < 0 or row >= len(self.last_items): return
         item = self.last_items[row]
-
-        date_str = item.properties.get("datetime", "N/A")[:10]
-        clouds   = item.properties.get("eo:cloud_cover", 0)
-        self.lbl_thumb_date.setText(date_str)
-        self.lbl_thumb_clouds.setText(f"☁ {clouds:.1f}% cloud cover")
+        self.lbl_thumb_date.setText(item.properties.get("datetime", "N/A")[:10])
+        self.lbl_thumb_clouds.setText(f"☁ {item.properties.get('eo:cloud_cover', 0):.1f}%")
         self.lbl_thumb_id.setText(item.id)
 
         asset = item.assets.get('rendered_preview')
         if not asset:
-            self.lbl_thumbnail.setText(
-                "<html><body><p align='center'>"
-                "<span style='color:#888888;'>No preview<br/>available</span>"
-                "</p></body></html>")
-            self.lbl_thumb_status.setText("")
+            self.lbl_thumbnail.setText(self.tr("No preview available"))
             return
 
+        self.lbl_thumbnail.setText(self.tr("Loading…"))
         if self._thumb_worker and self._thumb_worker.isRunning():
             self._thumb_worker.terminate()
             self._thumb_worker.wait()
-
-        self.lbl_thumbnail.setText(
-            "<html><body><p align='center'>"
-            "<span style='color:#888888;'>Loading…</span>"
-            "</p></body></html>")
-        self.lbl_thumb_status.setText("Fetching preview…")
-
         self._thumb_worker = ThumbnailWorker(asset.href, parent=self)
         self._thumb_worker.thumbnail_ready.connect(self._exibir_thumbnail)
-        self._thumb_worker.failed.connect(self._thumb_falhou)
         self._thumb_worker.start()
 
     def _exibir_thumbnail(self, pixmap):
         self.lbl_thumbnail.setText("")
         self.lbl_thumbnail.setPixmap(pixmap)
-        self.lbl_thumb_status.setText("Preview loaded")
 
-    def _thumb_falhou(self, reason):
-        self.lbl_thumbnail.setText(
-            "<html><body><p align='center'>"
-            "<span style='color:#cc4444;'>Preview<br/>unavailable</span>"
-            "</p></body></html>")
-        self.lbl_thumb_status.setText(f"Error: {reason}")
-
-    # ── Search ────────────────────────────────────────────────────────────────
     def popular_tabela(self):
         data_inicio = self.dateEdit_inicio.date().toString("yyyy-MM-dd")
         data_final  = self.dateEdit_final.date().toString("yyyy-MM-dd")
-        max_clouds  = self.slider_clouds.value()
         bbox        = self.loader.get_canvas_bbox()
-
-        self._set_ui_busy(True, context="search")
-        self.tableWidget.setRowCount(0)
-        self._reset_thumbnail_panel()
+        self._set_ui_busy(True, "search")
         iface.mainWindow().statusBar().showMessage(
-            "Searching images on Planetary Computer STAC API…")
-
+            self.tr("Searching images on Planetary Computer STAC API…")
+        )
         self._search_worker = SearchWorker(
             self.loader.catalog_url, self.loader.collection,
-            bbox, data_inicio, data_final, max_clouds,
+            bbox, data_inicio, data_final, self.slider_clouds.value(),
             parent=self
         )
         self._search_worker.search_done.connect(self._on_search_done)
@@ -327,99 +395,54 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         self._search_worker.start()
 
     def _on_search_done(self, items):
-        self._set_ui_busy(False, context="search")
-        self.last_items = items
+        self._set_ui_busy(False, "search")
         iface.mainWindow().statusBar().clearMessage()
-
-        if not items:
-            iface.messageBar().pushMessage(
-                "Quick VRT Imagery Loader",
-                "No image found for selected parameters.",
-                level=MsgLevel.Warning)
-            return
-
+        self.last_items = items
+        self.tableWidget.setRowCount(0)
         for idx, item in enumerate(items):
-            date_str = item.properties.get("datetime", "N/A")[:10]
-            clouds   = f"{item.properties.get('eo:cloud_cover', 0):.2f}%"
             self.tableWidget.insertRow(idx)
             self.tableWidget.setItem(idx, 0, QtWidgets.QTableWidgetItem(str(idx)))
-            self.tableWidget.setItem(idx, 1, QtWidgets.QTableWidgetItem(date_str))
-            self.tableWidget.setItem(idx, 2, QtWidgets.QTableWidgetItem(clouds))
+            self.tableWidget.setItem(idx, 1, QtWidgets.QTableWidgetItem(
+                item.properties.get("datetime", "N/A")[:10]))
+            self.tableWidget.setItem(idx, 2, QtWidgets.QTableWidgetItem(
+                f"{item.properties.get('eo:cloud_cover', 0):.2f}%"))
             self.tableWidget.setItem(idx, 3, QtWidgets.QTableWidgetItem(item.id))
-
         self.tableWidget.resizeColumnsToContents()
-        iface.messageBar().pushMessage(
-            "Quick VRT Imagery Loader",
-            f"{len(items)} images listed.",
-            level=MsgLevel.Info)
 
     def _on_search_error(self, error_msg):
-        self._set_ui_busy(False, context="search")
+        self._set_ui_busy(False, "search")
         iface.mainWindow().statusBar().clearMessage()
         iface.messageBar().pushMessage(
-            "STAC error", error_msg, level=MsgLevel.Critical)
+            self.tr("Search error"), error_msg,
+            level=MsgLevel.Critical, duration=8
+        )
 
-    # ── Load VRT ──────────────────────────────────────────────────────────────
     def process_stac_load(self):
-        if not self.last_items:
-            iface.messageBar().pushMessage(
-                "Error",
-                "Click 'List available images' before trying to load.",
-                level=MsgLevel.Warning)
-            return
-
-        indice     = self.spinBox_indice.value()
-        composicao = self.comboBox_composicao.currentText()
-
-        if indice < 0 or indice >= len(self.last_items):
-            iface.messageBar().pushMessage(
-                "Error", "Invalid index number selected.",
-                level=MsgLevel.Critical)
-            return
-
+        if not self.last_items: return
+        indice = self.spinBox_indice.value()
         selected_item = self.last_items[indice]
-        bands         = self.loader.compositions.get(composicao, [])
-
-        self._set_ui_busy(True, context="load")
-        iface.mainWindow().statusBar().showMessage(
-            f"Building VRT for {selected_item.id}…")
-
+        bands = self.loader.compositions.get(self.comboBox_composicao.currentText(), [])
+        self._set_ui_busy(True, "load")
         self._vrt_worker = VrtWorker(
-            selected_item, bands, self.loader.collection, parent=self)
+            selected_item, bands, self.loader.collection, parent=self
+        )
         self._vrt_worker.vrt_ready.connect(self._on_vrt_ready)
         self._vrt_worker.vrt_error.connect(self._on_vrt_error)
         self._vrt_worker.start()
 
     def _on_vrt_ready(self, vrt_path, layer_name):
-        """Runs on the main thread — safe to touch QGIS objects here."""
-        self._set_ui_busy(False, context="load")
-        iface.mainWindow().statusBar().clearMessage()
-
+        self._set_ui_busy(False, "load")
         vrt_layer = QgsRasterLayer(vrt_path, layer_name)
         if vrt_layer.isValid():
             QgsProject.instance().addMapLayer(vrt_layer)
-            iface.messageBar().pushMessage(
-                "Quick VRT Imagery Loader", "Image loaded.",
-                level=MsgLevel.Success)
-        else:
-            iface.messageBar().pushMessage(
-                "VRT Error", "Layer is not valid after building VRT.",
-                level=MsgLevel.Critical)
 
     def _on_vrt_error(self, error_msg):
-        self._set_ui_busy(False, context="load")
-        iface.mainWindow().statusBar().clearMessage()
+        self._set_ui_busy(False, "load")
         iface.messageBar().pushMessage(
-            "VRT Error", error_msg, level=MsgLevel.Critical)
+            self.tr("Load error"), error_msg,
+            level=MsgLevel.Critical, duration=8
+        )
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
     def _reset_thumbnail_panel(self):
-        self.lbl_thumbnail.setText(
-            "<html><body><p align='center'>"
-            "<span style='color:#888888;'>Select an image<br/>to preview</span>"
-            "</p></body></html>")
+        self.lbl_thumbnail.setText(self.tr("Select an image to preview"))
         self.lbl_thumbnail.setPixmap(QPixmap())
-        self.lbl_thumb_date.setText("")
-        self.lbl_thumb_clouds.setText("")
-        self.lbl_thumb_id.setText("")
-        self.lbl_thumb_status.setText("")
