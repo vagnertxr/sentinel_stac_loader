@@ -62,10 +62,15 @@ class ThumbnailWorker(QThread):
 
     def run(self):
         try:
+            if not self.url.lower().startswith(('http://', 'https://')):
+                self.failed.emit("Invalid URL")
+                return
+
             import urllib.request
             req = urllib.request.Request(self.url, headers={"User-Agent": "QuickVRTImageryLoader/0.6"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = resp.read()
+                
             pixmap = QPixmap()
             if not pixmap.loadFromData(data):
                 self.failed.emit("Could not decode image")
