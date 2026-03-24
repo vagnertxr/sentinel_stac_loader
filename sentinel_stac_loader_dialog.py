@@ -303,11 +303,11 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
     # compositions
 
     def atualizar_parametros_satelite(self):
-    satelite = self.comboBox_satelite.currentText()
+        satelite = self.comboBox_satelite.currentText()
 
-    if "Sentinel" in satelite:
-        self.loader.collection = "sentinel-2-l2a"
-        self.loader.compositions = {
+        if "Sentinel" in satelite:
+            self.loader.collection = "sentinel-2-l2a"
+            self.loader.compositions = {
             "True Color (B04, B03, B02)":                     ['B04', 'B03', 'B02'],
             "False Color NIR (B08, B04, B03)":                ['B08', 'B04', 'B03'],
             "False Color SWIR (B12, B08, B04)":               ['B12', 'B08', 'B04'],
@@ -325,9 +325,9 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
             "Snow / Ice (B04, B03, B08)":                     ['B04', 'B03', 'B08'],
         }
 
-    elif "Landsat" in satelite:
-        self.loader.collection = "landsat-c2-l2"
-        self.loader.compositions = {
+        elif "Landsat" in satelite:
+            self.loader.collection = "landsat-c2-l2"
+            self.loader.compositions = {
             "True Color (R, G, B)":                           ['red',    'green',  'blue'],
             "False Color NIR (NIR, R, G)":                    ['nir08',  'red',    'green'],
             "Agriculture (SWIR1, NIR, B)":                    ['swir16', 'nir08',  'blue'],
@@ -342,8 +342,8 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
             "Snow / Ice (R, G, NIR)":                         ['red',    'green',  'nir08'],
         }
 
-    self.comboBox_composicao.clear()
-    self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
+        self.comboBox_composicao.clear()
+        self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
 
     def _atualizar_label_clouds(self, value):
         self.label_clouds_value.setText(f"{value}%")
