@@ -56,12 +56,6 @@ https://plugins.qgis.org/plugins/sentinel_stac_loader/
 
 ---
 
-## Issues and contributions
-
-Found a bug or have a suggestion? Feel free to [open an issue](https://github.com/vagnertxr/sentinel_stac_loader/issues) on GitHub.
-
----
-
 ## License
 
 This project is licensed under the [GNU General Public License v2]
