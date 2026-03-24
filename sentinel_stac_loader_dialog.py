@@ -301,37 +301,49 @@ class SentinelSTACDialog(QtWidgets.QDialog, FORM_CLASS):
         self.btn_carregar.setText(self.tr("Load image"))
 
     # compositions
-    def atualizar_parametros_satelite(self):
-        satelite = self.comboBox_satelite.currentText()
-        if "Sentinel" in satelite:
-            self.loader.collection  = "sentinel-2-l2a"
-            self.loader.compositions = {
-                "True Color (B04, B03, B02)":                 ['B04', 'B03', 'B02'],
-                "False Color NIR (B08, B04, B03)":            ['B08', 'B04', 'B03'],
-                "False Color SWIR (B12, B08, B04)":           ['B12', 'B08', 'B04'],
-                "Agriculture (B11, B08, B02)":                ['B11', 'B08', 'B02'],
-                "Geology (B12, B11, B02)":                    ['B12', 'B11', 'B02'],
-                "Urban / Soil (B12, B11, B04)":               ['B12', 'B11', 'B04'],
-                "Bathymetric (B04, B03, B01)":                ['B04', 'B03', 'B01'],
-                "Atmospheric Penetration (B12, B11, B8A)":    ['B12', 'B11', 'B8A'],
-                "Vegetation Index / Biomass (B08, B11, B04)": ['B08', 'B11', 'B04'],
-                "Shortwave IR / Wildfires (B12, B08, B03)":   ['B12', 'B08', 'B03'],
-            }
-        elif "Landsat" in satelite:
-            self.loader.collection  = "landsat-c2-l2"
-            self.loader.compositions = {
-                "True Color (R, G, B)":                       ['red',    'green',  'blue'],
-                "False Color NIR (NIR, R, G)":                ['nir08',  'red',    'green'],
-                "Agriculture (SWIR1, NIR, B)":                ['swir16', 'nir08',  'blue'],
-                "Geology (SWIR2, SWIR1, B)":                  ['swir22', 'swir16', 'blue'],
-                "Urban / Soil (SWIR2, SWIR1, R)":             ['swir22', 'swir16', 'red'],
-                "Bathymetric (G, R, Coastal)":                ['green',  'red',    'coastal'],
-                "Shortwave IR / Wildfires (SWIR2, NIR, G)":   ['swir22', 'nir08',  'green'],
-                "Atmospheric Penetration (SWIR2, SWIR1, NIR)":['swir22', 'swir16', 'nir08'],
-            }
-        self.comboBox_composicao.clear()
-        self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
 
+    def atualizar_parametros_satelite(self):
+    satelite = self.comboBox_satelite.currentText()
+
+    if "Sentinel" in satelite:
+        self.loader.collection = "sentinel-2-l2a"
+        self.loader.compositions = {
+            "True Color (B04, B03, B02)":                     ['B04', 'B03', 'B02'],
+            "False Color NIR (B08, B04, B03)":                ['B08', 'B04', 'B03'],
+            "False Color SWIR (B12, B08, B04)":               ['B12', 'B08', 'B04'],
+            "Agriculture (B11, B08, B02)":                    ['B11', 'B08', 'B02'],
+            "Healthy Vegetation (B8A, B11, B02)":             ['B8A', 'B11', 'B02'],
+            "Red Edge / Stress Vegetal (B08, B8A, B04)":      ['B08', 'B8A', 'B04'],
+            "Vegetation Index / Biomass (B08, B11, B04)":     ['B08', 'B11', 'B04'],
+            "Geology (B12, B11, B02)":                        ['B12', 'B11', 'B02'],
+            "Urban / Soil (B12, B11, B04)":                   ['B12', 'B11', 'B04'],
+            "Bathymetric (B04, B03, B01)":                    ['B04', 'B03', 'B01'],
+            "Water Bodies (B03, B08, B11)":                   ['B03', 'B08', 'B11'],
+            "Shortwave IR / Wildfires (B12, B08, B04)":       ['B12', 'B08', 'B04'],
+            "Burn Area (B12, B8A, B04)":                      ['B12', 'B8A', 'B04'],
+            "Atmospheric Penetration (B12, B11, B8A)":        ['B12', 'B11', 'B8A'],
+            "Snow / Ice (B04, B03, B08)":                     ['B04', 'B03', 'B08'],
+        }
+
+    elif "Landsat" in satelite:
+        self.loader.collection = "landsat-c2-l2"
+        self.loader.compositions = {
+            "True Color (R, G, B)":                           ['red',    'green',  'blue'],
+            "False Color NIR (NIR, R, G)":                    ['nir08',  'red',    'green'],
+            "Agriculture (SWIR1, NIR, B)":                    ['swir16', 'nir08',  'blue'],
+            "Healthy Vegetation (NIR, SWIR1, R)":             ['nir08',  'swir16', 'red'],
+            "Geology (SWIR2, SWIR1, B)":                      ['swir22', 'swir16', 'blue'],
+            "Urban / Soil (SWIR2, SWIR1, R)":                 ['swir22', 'swir16', 'red'],
+            "Bathymetric (G, R, Coastal)":                    ['green',  'red',    'coastal'],
+            "Water Bodies (G, NIR, SWIR1)":                   ['green',  'nir08',  'swir16'],
+            "Shortwave IR / Wildfires (SWIR2, NIR, R)":       ['swir22', 'nir08',  'red'],
+            "Burn Area (SWIR2, SWIR1, NIR)":                  ['swir22', 'swir16', 'nir08'],
+            "Atmospheric Penetration (SWIR2, SWIR1, NIR)":    ['swir22', 'swir16', 'nir08'],
+            "Snow / Ice (R, G, NIR)":                         ['red',    'green',  'nir08'],
+        }
+
+    self.comboBox_composicao.clear()
+    self.comboBox_composicao.addItems(list(self.loader.compositions.keys()))
 
     def _atualizar_label_clouds(self, value):
         self.label_clouds_value.setText(f"{value}%")
