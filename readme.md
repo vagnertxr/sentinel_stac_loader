@@ -2,7 +2,7 @@
 
 A QGIS plugin designed for searching and loading satellite imagery via the **Microsoft Planetary Computer STAC API**. This tool optimizes the remote sensing workflow by providing pre-configured band compositions and loading imagery directly as Virtual Rasters (VRT).
 
-Supported satellites: **Sentinel-2 L2A** and **Landsat Collection 2 L2**.
+Supported satellite imagery collections: **Sentinel-2 L2A** and **Landsat Collection 2 Level-2**.
 
 Developed with Python and the QGIS Plugin Builder tool.
 
@@ -11,15 +11,15 @@ Developed with Python and the QGIS Plugin Builder tool.
 ### Via QGIS Plugin Manager *(recommended)*
 
 1. Open QGIS and go to **Plugins > Manage and Install Plugins**
-2. Click "All" then Search for `Quick VRT Imagery Loader`
+2. Click "All", then search for `Quick VRT Imagery Loader`
 3. Click **Install Plugin**
 
 ### Via ZIP file
 
-Download the `.zip` file from this repository and use the **Install from ZIP** option in the QGIS Plugin Manager, or extract the folder manually into your QGIS plugins directory:
+Download the `.zip` file from this repository (under "releases") and use the **Install from ZIP** option in the QGIS Plugin Manager, or extract the folder manually into your QGIS plugins directory:
 
-- **Windows**: `%AppData%\Roaming\QGIS\QGIS3\profiles\default\python\plugins`
-- **Linux**: `~/.local/share/QGIS/QGIS3/profiles\default\python\plugins`
+- **Windows**: `%AppData%\Roaming\QGIS\QGIS4\profiles\default\python\plugins`
+- **Linux**: `~/.local/share/QGIS/QGIS4/profiles\default\python\plugins`
 
 ---
 
