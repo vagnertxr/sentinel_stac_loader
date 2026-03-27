@@ -3,8 +3,7 @@ name=Quick VRT Imagery Loader
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 description=Loads satellite images from Microsoft Planetary Computer STAC API quickly
-version=0.6.99
-#development branch
+version=0.6.999 #development branch.
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
