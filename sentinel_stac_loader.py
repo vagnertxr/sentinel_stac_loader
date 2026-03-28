@@ -28,7 +28,6 @@ from qgis.PyQt.QtWidgets import QAction
 from qgis.core import Qgis, QgsMessageLog
 from .dependency_manager import DependencyManager
 from . import resources
-from .mosaic_tool import MosaicDialog
 
 
 try:
@@ -123,9 +122,6 @@ class SentinelSTAC:
         """Starts the plugin GUI."""
         # Verify dependencies at startup
         self.dependencies_ok = self.dep_manager.check_and_install()
-        self.mosaic_action = QAction("Auto-Mosaic", self.iface.mainWindow())
-        self.mosaic_action.triggered.connect(lambda: MosaicDialog(self.iface).exec())
-        self.iface.addToolBarIcon(self.mosaic_action)
         icon_path = ":/plugins/sentinel_stac_loader/icon.png"
         
         self.main_action = self.add_action(

@@ -27,12 +27,12 @@
 <translation>Quick VRT Imagery Loader</translation>
 </message>
 <message>
-<source>Select parameters for searching images in the current map extent.</source>
-<translation>Selecione os parâmetros para buscar imagens na extensão atual do mapa.</translation>
+<source>Search and load satellite imagery from Microsoft Planetary Computer</source>
+<translation>Busque e carregue imagens de satélite do Microsoft Planetary Computer</translation>
 </message>
 <message>
-<source>IMAGE PARAMETERS</source>
-<translation>PARÂMETROS DA IMAGEM</translation>
+<source>Search Parameters</source>
+<translation>Parâmetros de busca</translation>
 </message>
 <message>
 <source>Satellite:</source>
@@ -43,36 +43,36 @@
 <translation>Composição:</translation>
 </message>
 <message>
-<source>Start date:</source>
-<translation>Data inicial:</translation>
+<source>Period:</source>
+<translation>Período:</translation>
 </message>
 <message>
-<source>End date:</source>
-<translation>Data final:</translation>
+<source> to </source>
+<translation> até </translation>
 </message>
 <message>
 <source>Max clouds:</source>
 <translation>Nuvens máx:</translation>
 </message>
 <message>
-<source>Filter images by maximum cloud cover percentage</source>
-<translation>Filtrar imagens pelo percentual máximo de nuvens</translation>
+<source>Search Area (W, S, E, N)</source>
+<translation>Área de Busca (W, S, E, N)</translation>
+</message>
+<message>
+<source>Get from Map</source>
+<translation>Obter do Mapa</translation>
+</message>
+<message>
+<source>Use current canvas extent</source>
+<translation>Usar a extensão atual do mapa</translation>
+</message>
+<message>
+<source>Browser</source>
+<translation>Navegador</translation>
 </message>
 <message>
 <source>List available images</source>
 <translation>Listar imagens disponíveis</translation>
-</message>
-<message>
-<source>Searching…</source>
-<translation>Buscando…</translation>
-</message>
-<message>
-<source>Searching images on Planetary Computer STAC API…</source>
-<translation>Buscando imagens na API STAC do Planetary Computer…</translation>
-</message>
-<message>
-<source>RESULTS</source>
-<translation>RESULTADOS</translation>
 </message>
 <message>
 <source>Index</source>
@@ -91,44 +91,120 @@
 <translation>ID</translation>
 </message>
 <message>
-<source>PREVIEW</source>
-<translation>PRÉ-VISUALIZAÇÃO</translation>
-</message>
-<message>
 <source>Select an image to preview</source>
 <translation>Selecione uma imagem para visualizar</translation>
 </message>
 <message>
-<source>No preview available</source>
-<translation>Prévia não disponível</translation>
-</message>
-<message>
-<source>Loading…</source>
-<translation>Carregando…</translation>
-</message>
-<message>
-<source>Full image ID — hover to read, click 📋 to copy</source>
-<translation>ID completo da imagem — passe o mouse para ler, clique em 📋 para copiar</translation>
-</message>
-<message>
-<source>Copy image ID to clipboard</source>
-<translation>Copiar ID da imagem para a área de transferência</translation>
+<source>Copy ID</source>
+<translation>Copiar ID</translation>
 </message>
 <message>
 <source>Choose image:</source>
 <translation>Escolher imagem:</translation>
 </message>
 <message>
-<source>0 = Cleanest image, 1 = Second best, etc.</source>
-<translation>0 = Imagem mais limpa, 1 = Segunda melhor, etc.</translation>
-</message>
-<message>
-<source>Sorted by cloud cover, lowest to highest. Click a row to preview.</source>
-<translation>Ordenado por cobertura de nuvens (menor para maior). Clique em uma linha para pré-visualizar.</translation>
-</message>
-<message>
 <source>Load image</source>
 <translation>Carregar imagem</translation>
+</message>
+<message>
+<source>Mosaic Selected</source>
+<translation>Mosaico das Selecionadas</translation>
+</message>
+<message>
+<source>Export GeoTIFF (optional)</source>
+<translation>Exportar GeoTIFF (opcional)</translation>
+</message>
+<message>
+<source>.tif File:</source>
+<translation>Arquivo .tif:</translation>
+</message>
+<message>
+<source>Compression:</source>
+<translation>Compressão:</translation>
+</message>
+<message>
+<source>Auto-Mosaic</source>
+<translation>Auto-Mosaico</translation>
+</message>
+<message>
+<source>Auto-Mosaic Options</source>
+<translation>Opções de Auto-Mosaico</translation>
+</message>
+<message>
+<source>Safety Limit (Scenes):</source>
+<translation>Limite de Segurança (Cenas):</translation>
+</message>
+<message>
+<source>Preference:</source>
+<translation>Preferência:</translation>
+</message>
+<message>
+<source>Least Clouds</source>
+<translation>Menos Nuvens</translation>
+</message>
+<message>
+<source>Most Recent</source>
+<translation>Mais Recente</translation>
+</message>
+<message>
+<source>Export GeoTIFF</source>
+<translation>Exportar GeoTIFF</translation>
+</message>
+<message>
+<source>Output .tif file path</source>
+<translation>Caminho do arquivo .tif de saída</translation>
+</message>
+<message>
+<source>Selected Scenes:</source>
+<translation>Cenas Selecionadas:</translation>
+</message>
+<message>
+<source>Date</source>
+<translation>Data</translation>
+</message>
+<message>
+<source>Clouds</source>
+<translation>Nuvens</translation>
+</message>
+<message>
+<source>▶ Generate Mosaic</source>
+<translation>▶ Gerar Mosaico</translation>
+</message>
+<message>
+<source>Connecting to Planetary Computer STAC…</source>
+<translation>Conectando ao Planetary Computer STAC…</translation>
+</message>
+<message>
+<source>Analyzing scenes to reach 100% coverage…</source>
+<translation>Analisando cenas para atingir 100% de cobertura…</translation>
+</message>
+<message>
+<source>  [+] Added {} (Coverage: {:.1f}%)</source>
+<translation>  [+] Adicionado {} (Cobertura: {:.1f}%)</translation>
+</message>
+<message>
+<source>Final coverage reached: {:.1f}%</source>
+<translation>Cobertura final atingida: {:.1f}%</translation>
+</message>
+<message>
+<source>Mosaicking band {} ({}/{})…</source>
+<translation>Criando mosaico da banda {} ({}/{})…</translation>
+</message>
+<message>
+<source>Finalizing VRT…</source>
+<translation>Finalizando VRT…</translation>
+</message>
+<message>
+<source>Success</source>
+<translation>Sucesso</translation>
+</message>
+<message>
+<source>Mosaic generation finished.</source>
+<translation>Geração do mosaico concluída.</translation>
+</message>
+<message>
+<source>Mosaic error</source>
+<translation>Erro no mosaico</translation>
 </message>
 <message>
 <source>Search error</source>
