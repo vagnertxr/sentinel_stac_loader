@@ -167,8 +167,9 @@
 <translation>Nubes</translation>
 </message>
 <message>
-<source>▶ Generate Mosaic</source>
-<translation>▶ Generar Mosaico</translation>
+<source>Generate Mosaic</source>
+<translation>Generar Mosaico</translation>
+
 </message>
 <message>
 <source>Connecting to Planetary Computer STAC…</source>

@@ -8,7 +8,7 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.PyQt.QtCore import Qt
 
-# ── Enum compatibility: Qgis.MessageLevel (QGIS 4/Qt6) vs Qgis.* (QGIS 3/Qt5)
+
 try:
     _ml = Qgis.MessageLevel
     class MsgLevel:
@@ -23,7 +23,7 @@ except AttributeError:
         Critical = Qgis.Critical
         Success  = Qgis.Success
 
-# ── QDialog.Accepted compatibility ───────────────────────────────────────────
+
 try:
     _ACCEPTED = QDialog.DialogCode.Accepted   # PyQt6
 except AttributeError:
@@ -38,12 +38,7 @@ class DependencyManager:
         self.plugin_name = plugin_name
         self.dependencies = dependencies
         self._python_exe = self._get_python_executable()
-        # Inject user site-packages into sys.path immediately so that
-        # packages installed in a previous session (or just now) are importable
-        # without restarting QGIS.
         self._ensure_user_site_on_path()
-
-    # ── Path helpers ──────────────────────────────────────────────────────────
 
     def _get_python_executable(self):
         """Locate the Python executable that belongs to the running QGIS install.
@@ -118,21 +113,12 @@ class DependencyManager:
         return None
 
     def _ensure_user_site_on_path(self):
-        """Add the user site-packages dir to sys.path if it isn't already there.
-
-        This is the key fix: pip install --user puts packages in a directory
-        that QGIS may not have added to sys.path.  By inserting it here we make
-        every previously-installed (or just-installed) package importable
-        immediately, without restarting QGIS.
-        """
         user_site = self._get_user_site_packages()
         if user_site and user_site not in sys.path:
             sys.path.insert(0, user_site)
             QgsMessageLog.logMessage(
                 f"Added user site-packages to sys.path: {user_site}",
                 self.plugin_name, MsgLevel.Info)
-
-    # ── Dependency checks ─────────────────────────────────────────────────────
 
     def check_missing(self):
         """Return the pip names of packages that cannot be imported right now."""
@@ -158,15 +144,12 @@ class DependencyManager:
             self.iface.mainWindow(), missing, self.plugin_name)
         if dialog.exec() != _ACCEPTED:
             return False
-
+Notificações
         success = self._install_packages(missing)
 
         if success:
-            # Re-inject user site-packages so the freshly installed packages
-            # are importable in this same QGIS session.
             self._ensure_user_site_on_path()
 
-            # Verify that the packages are now actually importable.
             still_missing = self.check_missing()
             if still_missing:
                 QgsMessageLog.logMessage(
@@ -183,8 +166,6 @@ class DependencyManager:
 
         return success
 
-    # ── Installation ──────────────────────────────────────────────────────────
-
     def _install_packages(self, packages):
         startupinfo = None
         if os.name == 'nt':
@@ -192,7 +173,7 @@ class DependencyManager:
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         progress = QProgressDialog(
-            "Installing dependencies…", "Cancel", 0, len(packages),
+            "Installing dependencies...", "Cancel", 0, len(packages),
             self.iface.mainWindow())
         progress.setWindowModality(Qt.WindowModality.WindowModal \
             if hasattr(Qt.WindowModality, 'WindowModal') \
@@ -204,7 +185,7 @@ class DependencyManager:
             if progress.wasCanceled():
                 break
 
-            progress.setLabelText(f"Downloading and installing {pkg}…")
+            progress.setLabelText(f"Downloading and installing {pkg}...")
             progress.setValue(i)
             QApplication.processEvents()
 
@@ -255,13 +236,13 @@ class DependencyInstallDialog(QDialog):
 
     def __init__(self, parent, packages, plugin_name):
         super().__init__(parent)
-        self.setWindowTitle(f"{plugin_name} – Dependencies")
+        self.setWindowTitle(f"{plugin_name} - Dependencies")
         self.setMinimumWidth(420)
         layout = QVBoxLayout(self)
 
         pkg_list = "".join(f"<li><b>{p}</b></li>" for p in packages)
         layout.addWidget(QLabel(
-            f"<h3>📦 Missing components</h3>"
+            f"<h3>Missing components</h3>"
             f"The <b>{plugin_name}</b> plugin requires additional packages:"
             f"<ul style='color:#2980b9;'>{pkg_list}</ul>"
             f"<p><small>They will be installed into your user Python environment "
