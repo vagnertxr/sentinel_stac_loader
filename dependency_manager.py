@@ -41,11 +41,7 @@ class DependencyManager:
         self._ensure_user_site_on_path()
 
     def _get_python_executable(self):
-        """Locate the Python executable that belongs to the running QGIS install.
-
-        sys.executable in QGIS points to qgis.exe / qgis-bin, NOT python.
-        We search known locations explicitly.
-        """
+        """Locate the Python executable that belongs to the running QGIS install."""
         if os.name != 'nt':
             return sys.executable
 
@@ -85,12 +81,6 @@ class DependencyManager:
         return 'python.exe'
 
     def _get_user_site_packages(self):
-        """Return the user site-packages directory for the current Python.
-
-        We ask the *same* Python executable that we use for pip install, so the
-        path is always consistent — even on Windows where sys.executable is the
-        QGIS binary and not python.exe.
-        """
         try:
             startupinfo = None
             if os.name == 'nt':
@@ -121,7 +111,6 @@ class DependencyManager:
                 self.plugin_name, MsgLevel.Info)
 
     def check_missing(self):
-        """Return the pip names of packages that cannot be imported right now."""
         missing = []
         for pip_name, import_name in self.dependencies.items():
             try:
@@ -131,11 +120,6 @@ class DependencyManager:
         return missing
 
     def check_and_install(self):
-        """Check for missing dependencies and offer to install them.
-
-        Returns True if all dependencies are satisfied (either were already
-        present, or were just installed successfully).
-        """
         missing = self.check_missing()
         if not missing:
             return True
@@ -144,7 +128,7 @@ class DependencyManager:
             self.iface.mainWindow(), missing, self.plugin_name)
         if dialog.exec() != _ACCEPTED:
             return False
-Notificações
+
         success = self._install_packages(missing)
 
         if success:

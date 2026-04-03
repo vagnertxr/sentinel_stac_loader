@@ -13,7 +13,7 @@ from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
     QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsRectangle,
+    QgsRectangle, QgsJsonUtils
 )
 from qgis.gui import QgsRubberBand
 from qgis.utils import iface
@@ -82,8 +82,6 @@ except AttributeError:
         Success  = Qgis.Success  
 
 # Predefined band combinations for Sentinel-2 and Landsat.
-# I can accept more! Create Pull Requests if you want more compositions that you need or reach the author with your suggestions
-
 SENTINEL2_COMPOSITIONS = {
     "True Color (B04, B03, B02)":              ["B04", "B03", "B02"],
     "False Color NIR (B08, B04, B03)":         ["B08", "B04", "B03"],
@@ -116,6 +114,12 @@ LANDSAT_COMPOSITIONS = {
     "Atmospheric Penetration (SWIR2, SWIR1)":  ["swir22", "swir16", "nir08"],
     "Snow / Ice (R, G, NIR)":                  ["red", "green", "nir08"],
 }
+
+# ── Generoso defaults ────────────────────────────────────────────────────────
+_DEFAULT_DAYS_BACK  = 180   # janela de busca padrão: 6 meses
+_DEFAULT_MAX_CLOUDS = 40    # nuvens: até 40 %
+_DEFAULT_MAX_SCENES = 50    # limite de cenas no Auto-Mosaic
+# ─────────────────────────────────────────────────────────────────────────────
 
 class ThumbnailWorker(QThread):
     thumbnail_ready = pyqtSignal(QPixmap)
@@ -182,15 +186,14 @@ class SearchWorker(QThread):
             self.search_error.emit(str(e))
 
 
-
 class VrtWorker(QThread):
     vrt_ready     = pyqtSignal(str, str)
     vrt_error     = pyqtSignal(str)
-    load_progress = pyqtSignal(int)   
+    load_progress = pyqtSignal(int)
 
-    def __init__(self, item, bands, collection, parent=None):
+    def __init__(self, items, bands, collection, parent=None):
         super().__init__(parent)
-        self.item       = item
+        self.items      = items if isinstance(items, list) else [items]
         self.bands      = bands
         self.collection = collection
 
@@ -198,33 +201,46 @@ class VrtWorker(QThread):
         try:
             import planetary_computer
             import processing
-            self.load_progress.emit(10)
-            band_hrefs = []
-            for band in self.bands:
-                asset = self.item.assets.get(band)
-                if asset:
-                    signed = planetary_computer.sign(asset.href)
-                    band_hrefs.append(f"/vsicurl/{signed}")
-            if not band_hrefs:
-                self.vrt_error.emit("No valid band assets found")
-                return
-            self.load_progress.emit(40)
-            result = processing.run(
-                "gdal:buildvirtualraster",
-                {"INPUT": band_hrefs, "SEPARATE": True, "OUTPUT": "TEMPORARY_OUTPUT"},
-            )
-            self.load_progress.emit(90)
-            clouds     = self.item.properties.get("eo:cloud_cover", 0)
-            prefix     = "S2" if "sentinel" in self.collection else "LS"
-            layer_name = f"{prefix}_{self.item.id} ({clouds:.1f}% clouds)"
-            self.vrt_ready.emit(result["OUTPUT"], layer_name)
+            from osgeo import gdal
+            
+            # Boost GDAL network resilience for /vsicurl/
+            gdal.SetConfigOption("GDAL_HTTP_MAX_RETRY", "10")
+            gdal.SetConfigOption("GDAL_HTTP_RETRY_DELAY", "1")
+            gdal.SetConfigOption("VSI_CACHE", "TRUE")
+            gdal.SetConfigOption("GDAL_HTTP_TIMEOUT", "30")
+            
+            total = len(self.items)
+            for i, item in enumerate(self.items):
+                try:
+                    band_hrefs = []
+                    for band in self.bands:
+                        asset = item.assets.get(band)
+                        if asset:
+                            signed = planetary_computer.sign(asset.href)
+                            band_hrefs.append(f"/vsicurl/{signed}")
+                    
+                    if not band_hrefs:
+                        self.vrt_error.emit(f"Item {item.id}: No valid bands")
+                        continue
+
+                    result = processing.run(
+                        "gdal:buildvirtualraster",
+                        {"INPUT": band_hrefs, "SEPARATE": True, "OUTPUT": "TEMPORARY_OUTPUT"},
+                    )
+                    
+                    clouds     = item.properties.get("eo:cloud_cover", 0)
+                    prefix     = "S2" if "sentinel" in self.collection else "LS"
+                    layer_name = f"{prefix}_{item.id} ({clouds:.1f}% clouds)"
+                    self.vrt_ready.emit(result["OUTPUT"], layer_name)
+                    
+                    self.load_progress.emit(int(((i + 1) / total) * 100))
+                except Exception as e:
+                    self.vrt_error.emit(f"Error loading {item.id}: {str(e)}")
         except Exception as e:
             self.vrt_error.emit(str(e))
 
 
-
 class SentinelSTACDialog(QtWidgets.QDialog):
-
 
     _STYLE = """
         QDialog {
@@ -367,7 +383,12 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self._search_worker = None
         self._vrt_worker    = None
         self._mosaic_worker = None
-        self._rubber_band   = None   
+        self._rubber_band   = None
+        
+        # Debounce timer for thumbnails to avoid freezing during rapid clicking
+        self._thumb_timer = QtCore.QTimer(self)
+        self._thumb_timer.setSingleShot(True)
+        self._thumb_timer.timeout.connect(self._do_debounced_thumbnail)
 
         self._build_ui()
         self._retranslate()
@@ -381,6 +402,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
 
 
     def _build_ui(self):
+
         root = QtWidgets.QVBoxLayout(self)
         root.setContentsMargins(12, 12, 12, 12)
         root.setSpacing(8)
@@ -440,7 +462,10 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         g.addWidget(self.lbl_period, 1, 0)
         date_lay = QtWidgets.QHBoxLayout()
         date_style = "font-size: 8pt;"
-        self.dateEdit_inicio = QtWidgets.QDateEdit(date.today() - timedelta(days=30))
+        # ── data inicial: _DEFAULT_DAYS_BACK dias atrás ──────────────────────
+        self.dateEdit_inicio = QtWidgets.QDateEdit(
+            date.today() - timedelta(days=_DEFAULT_DAYS_BACK)
+        )
         self.dateEdit_inicio.setCalendarPopup(True)
         self.dateEdit_inicio.setDisplayFormat("yyyy-MM-dd")
         self.dateEdit_inicio.setStyleSheet(date_style)
@@ -461,8 +486,9 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         cloud_lay = QtWidgets.QHBoxLayout()
         self.slider_clouds = QtWidgets.QSlider(_Horizontal)
         self.slider_clouds.setRange(0, 100)
-        self.slider_clouds.setValue(20)
-        self.lbl_clouds_val = QtWidgets.QLabel("20%")
+        # ── cobertura de nuvens padrão: _DEFAULT_MAX_CLOUDS ──────────────────
+        self.slider_clouds.setValue(_DEFAULT_MAX_CLOUDS)
+        self.lbl_clouds_val = QtWidgets.QLabel(f"{_DEFAULT_MAX_CLOUDS}%")
         self.lbl_clouds_val.setFixedWidth(36)
         self.lbl_clouds_val.setAlignment(_AlignCenter)
         self.lbl_clouds_val.setStyleSheet("color: #89b4fa; font-weight: bold;")
@@ -618,8 +644,8 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.lbl_max_scenes = QtWidgets.QLabel()
         m.addWidget(self.lbl_max_scenes, 0, 0)
         self.sp_items = QtWidgets.QSpinBox()
-        self.sp_items.setRange(1, 100)
-        self.sp_items.setValue(20)
+        self.sp_items.setRange(1, 500)          # ── máximo ampliado para 500
+        self.sp_items.setValue(_DEFAULT_MAX_SCENES)  # ── default: 50 cenas
         m.addWidget(self.sp_items, 0, 1)
 
         self.lbl_preference = QtWidgets.QLabel()
@@ -655,7 +681,6 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.chk_export_tif.toggled.connect(self.btn_browse_tif.setEnabled)
         self.chk_export_tif.toggled.connect(self.cb_compress.setEnabled)
         lay.addWidget(self.grp_mosaic_opt)
-
 
         v_splitter = QtWidgets.QSplitter(_Vertical)
 
@@ -738,7 +763,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
     def _retranslate(self):
         self.lbl_title.setText(self.tr("Quick VRT Imagery Loader"))
         self.lbl_subtitle.setText(
-            self.tr("Satellite imagery via Microsoft Planetary Computer STAC API")
+            self.tr("Browse Satellite product collections, load imagery and build compositions and mosaics very quickly!")
         )
         self.grp_params.setTitle(self.tr("Search Parameters"))
         self.lbl_sat.setText(self.tr("Satellite:"))
@@ -747,13 +772,15 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.lbl_to.setText(self.tr(" to "))
         self.lbl_max_clouds.setText(self.tr("Max clouds:"))
         self.lbl_bbox.setText(self.tr("Search area:"))
-        self.btn_extent.setText(self.tr("Get from Map"))
-        self.btn_listar.setText(self.tr("Search available images"))
+        self.btn_extent.setText(self.tr("🗺️ Get from map canvas"))
+        self.btn_listar.setText(self.tr("🔍 Search available images"))
         self.tableWidget.setHorizontalHeaderLabels(
             [self.tr("#"), self.tr("Date"), self.tr("Clouds"), self.tr("Scene ID")]
         )
         self.btn_carregar.setText(self.tr("Load Selected"))
         self.btn_mosaic_selected.setText(self.tr("Mosaic Selected"))
+        self.btn_copy_id.setText(self.tr("📋 Copy ID"))
+        self.btn_show_footprint.setText(self.tr("Toggle Footprint"))
         self.grp_export_browser.setTitle(self.tr("Export GeoTIFF (optional)"))
         self.lbl_tif_file_browser.setText(self.tr("File:"))
         self.lbl_compress_browser.setText(self.tr("Compress:"))
@@ -797,11 +824,14 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             self.sp_west.value(), self.sp_south.value(),
             self.sp_east.value(), self.sp_north.value(),
         ]
-    
+
     def popular_tabela(self):
         if hasattr(self, "_search_worker") and self._search_worker and self._search_worker.isRunning():
-            self._search_worker.terminate()
-            self._search_worker.wait()
+            try:
+                self._search_worker.search_done.disconnect()
+                self._search_worker.search_error.disconnect()
+            except:
+                pass
 
         bbox = self._current_bbox()
         self.btn_listar.setText(self.tr("Searching…"))
@@ -819,7 +849,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self._search_worker.start()
 
     def _on_search_done(self, items):
-        self.btn_listar.setText(self.tr("Search available images"))
+        self.btn_listar.setText(self.tr("🔍 Search available images"))
         self.btn_listar.setEnabled(True)
         self.last_items = items
         self.tableWidget.setRowCount(0)
@@ -838,30 +868,35 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self._reset_preview()
 
     def _on_search_error(self, err):
-        self.btn_listar.setText(self.tr("Search available images"))
+        self.btn_listar.setText(self.tr("🔍 Search available images"))
         self.btn_listar.setEnabled(True)
         iface.messageBar().pushMessage(self.tr("Search error"), err, level=MsgLevel.Critical)
 
     def _on_table_row_clicked(self, row):
-        self._load_thumbnail(row)
-        if self.btn_show_footprint.isChecked():
-            self._draw_footprint(row)
-
-    def _on_selection_changed(self):
-        rows = self.tableWidget.selectionModel().selectedRows()
-        if rows:
-            self._on_table_row_clicked(rows[0].row())
-
-    def _load_thumbnail(self, row):
         if row < 0 or row >= len(self.last_items):
             return
+        
+        # Immediate UI feedback for metadata
         item = self.last_items[row]
         self.lbl_thumb_date.setText(item.properties.get("datetime", "N/A")[:10])
         cc = item.properties.get("eo:cloud_cover", 0)
         self.lbl_thumb_clouds.setText(f"{cc:.1f}%")
         self.lbl_thumb_id.setText(item.id)
         self.lbl_thumb_id.setToolTip(item.id)
+        
+        # Debounce the thumbnail download (250ms delay)
+        self._current_thumb_row = row
+        self._thumb_timer.start(250)
+        
+        if self.btn_show_footprint.isChecked():
+            self._draw_footprint(row)
 
+    def _do_debounced_thumbnail(self):
+        row = getattr(self, "_current_thumb_row", -1)
+        if row < 0 or row >= len(self.last_items):
+            return
+            
+        item = self.last_items[row]
         asset = item.assets.get("rendered_preview")
         if not asset:
             self.lbl_thumbnail.setText(self.tr("No preview available"))
@@ -869,15 +904,31 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             return
 
         self.lbl_thumbnail.setText(self.tr("Loading…"))
+        
+        # Safety: disconnect old signals and let them finish in background 
+        # instead of terminate() + wait() which blocks the main thread.
         if self._thumb_worker and self._thumb_worker.isRunning():
-            self._thumb_worker.terminate()
-            self._thumb_worker.wait()
+            try:
+                self._thumb_worker.thumbnail_ready.disconnect()
+                self._thumb_worker.failed.disconnect()
+            except:
+                pass
+
         self._thumb_worker = ThumbnailWorker(asset.href, parent=self)
         self._thumb_worker.thumbnail_ready.connect(self._show_thumbnail)
         self._thumb_worker.failed.connect(
             lambda msg: self.lbl_thumbnail.setText(f"⚠ {msg}")
         )
         self._thumb_worker.start()
+
+    def _on_selection_changed(self):
+        rows = self.tableWidget.selectionModel().selectedRows()
+        if rows:
+            self._on_table_row_clicked(rows[0].row())
+
+    def _load_thumbnail(self, row):
+        # This method is now handled by _on_table_row_clicked + timer
+        pass
 
     def _show_thumbnail(self, pixmap):
         self.lbl_thumbnail.setText("")
@@ -891,7 +942,11 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.lbl_thumb_id.setText("")
 
     def _toggle_footprint(self, checked):
-        if not checked:
+        if checked:
+            rows = self.tableWidget.selectionModel().selectedRows()
+            if rows:
+                self._draw_footprint(rows[0].row())
+        else:
             self._clear_rubber_band()
 
     def _draw_footprint(self, row):
@@ -899,52 +954,57 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             return
         self._clear_rubber_band()
         item = self.last_items[row]
-        geom = item.geometry
-        if not geom:
-            return
-
-        coords = geom.get("coordinates", [])
-        gtype  = geom.get("type", "")
-
+        
         try:
-            if gtype == "Polygon":
-                ring = coords[0]
-                pts  = [QgsPointXY(c[0], c[1]) for c in ring]
-            elif gtype == "MultiPolygon":
-                ring = coords[0][0]
-                pts  = [QgsPointXY(c[0], c[1]) for c in ring]
-            else:
+            import json
+            geom_dict = item.geometry
+            if not geom_dict:
                 return
-        except (IndexError, TypeError):
-            return
+                
+            # QgsJsonUtils.geometryFromGeoJson is the way in QGIS 3/4
+            qgs_geom = QgsJsonUtils.geometryFromGeoJson(json.dumps(geom_dict))
+            
+            if not qgs_geom or qgs_geom.isEmpty():
+                return
 
-        qgs_geom = QgsGeometry.fromPolygonXY([pts])
+            src_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+            dst_crs = iface.mapCanvas().mapSettings().destinationCrs()
+            if src_crs != dst_crs:
+                xform = QgsCoordinateTransform(src_crs, dst_crs, QgsProject.instance())
+                qgs_geom.transform(xform)
 
-        src_crs = QgsCoordinateReferenceSystem("EPSG:4326")
-        dst_crs = iface.mapCanvas().mapSettings().destinationCrs()
-        if src_crs != dst_crs:
-            xform    = QgsCoordinateTransform(src_crs, dst_crs, QgsProject.instance())
-            qgs_geom.transform(xform)
-
-        rb = QgsRubberBand(iface.mapCanvas(), QgsGeometry.Type.Polygon \
-             if _QT6 else 2)  
-        rb.setColor(QColor(137, 180, 250, 160))   
-        rb.setFillColor(QColor(137, 180, 250, 40))
-        rb.setWidth(2)
-        rb.setToGeometry(qgs_geom, None)
-        self._rubber_band = rb
+            # Safely get Polygon geometry type for RubberBand
+            try:
+                # QGIS 4/Qt6 way
+                poly_type = Qgis.GeometryType.Polygon
+            except AttributeError:
+                # QGIS 3 way
+                poly_type = 2
+                
+            rb = QgsRubberBand(iface.mapCanvas(), poly_type) 
+            rb.setColor(QColor(137, 180, 250, 160))
+            rb.setFillColor(QColor(137, 180, 250, 40))
+            rb.setWidth(2)
+            rb.setToGeometry(qgs_geom, None)
+            rb.show()
+            self._rubber_band = rb
+        except Exception as e:
+            QgsMessageLog.logMessage(f"Footprint error: {str(e)}", "QuickVRT", MsgLevel.Warning)
 
     def _clear_rubber_band(self):
         if self._rubber_band:
-            iface.mapCanvas().scene().removeItem(self._rubber_band)
+            try:
+                self._rubber_band.reset()
+            except:
+                iface.mapCanvas().scene().removeItem(self._rubber_band)
             self._rubber_band = None
 
     def process_stac_load(self):
         rows = self.tableWidget.selectionModel().selectedRows()
         if not rows:
             return
-        idx  = rows[0].row()
-        item = self.last_items[idx]
+        
+        items = [self.last_items[r.row()] for r in rows]
 
         comp_name = self.comboBox_composicao.currentText()
         bands     = self._compositions.get(comp_name, [])
@@ -958,6 +1018,8 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             return
 
         if export:
+            # For export, we only support one item at a time or use the first selected
+            item = items[0]
             params = {
                 "bbox": self._current_bbox(),
                 "start_date": self.dateEdit_inicio.date().toString("yyyy-MM-dd"),
@@ -977,25 +1039,29 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             self._start_mosaic_worker(params, re_enable=[self.btn_carregar])
         else:
             self.btn_carregar.setEnabled(False)
-            self._vrt_worker = VrtWorker(item, bands, self._collection, parent=self)
+            # VrtWorker now handles a list of items
+            self._vrt_worker = VrtWorker(items, bands, self._collection, parent=self)
             self._vrt_worker.vrt_ready.connect(self._on_vrt_ready)
             self._vrt_worker.vrt_error.connect(self._on_vrt_error)
             self._vrt_worker.load_progress.connect(self.browser_progress.setValue)
+            self._vrt_worker.finished.connect(self._on_vrt_finished)
             self.browser_progress.setValue(0)
             self.browser_progress.setVisible(True)
             self._vrt_worker.start()
 
     def _on_vrt_ready(self, vrt_path, layer_name):
-        self.btn_carregar.setEnabled(True)
-        self.browser_progress.setValue(100)
-        self.browser_progress.setVisible(False)
         layer = QgsRasterLayer(vrt_path, layer_name)
         if layer.isValid():
             QgsProject.instance().addMapLayer(layer)
 
-    def _on_vrt_error(self, err):
+    def _on_vrt_finished(self):
         self.btn_carregar.setEnabled(True)
+        self.browser_progress.setValue(100)
         self.browser_progress.setVisible(False)
+
+    def _on_vrt_error(self, err):
+        # We don't re-enable btn_carregar here because _on_vrt_finished 
+        # will be called anyway when the worker thread ends.
         iface.messageBar().pushMessage(self.tr("Load error"), err, level=MsgLevel.Critical)
 
     def _run_mosaic_selected(self):
@@ -1091,7 +1157,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
 
     def _on_mosaic_finished(self, vrt, tif):
         self._re_enable_buttons()
-        self.mosaic_progress.setRange(0, 0)   
+        self.mosaic_progress.setRange(0, 0)
         self.mosaic_progress.setVisible(False)
         comp = self.comboBox_composicao.currentText()
         layer = QgsRasterLayer(vrt, self.tr("Mosaic – {}").format(comp))
