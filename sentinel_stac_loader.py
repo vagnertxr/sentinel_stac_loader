@@ -56,7 +56,8 @@ class SentinelSTAC:
         self.deps = {
             'pystac-client': 'pystac_client',
             'planetary-computer': 'planetary_computer',
-            'shapely': 'shapely'
+            'shapely': 'shapely',
+            'numpy': 'numpy'
         }
         
         self.dep_manager = DependencyManager(self.iface, "Quick VRT Imagery Loader", self.deps)
@@ -162,6 +163,7 @@ class SentinelSTAC:
             if hasattr(self.dlg, 'btn_listar'):
                 self.dlg.btn_listar.clicked.connect(self.dlg.popular_tabela)
 
+        self.dlg.prepare_for_open()
         self.dlg.show()
         # exec_() was renamed to exec() in Qt6/PyQt6.
         # QDialog.exec() exists in both Qt5 and Qt6, so use it unconditionally.

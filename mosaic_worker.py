@@ -6,6 +6,8 @@ from pathlib import Path
 from qgis.PyQt.QtCore import QThread, pyqtSignal, QCoreApplication
 from osgeo import gdal, osr
 
+from .indices import create_derived_vrt
+
 gdal.UseExceptions()
 
 class MosaicWorker(QThread):
@@ -18,6 +20,7 @@ class MosaicWorker(QThread):
     def __init__(self, params):
         super().__init__()
         self.params = params
+        self.formula = params.get("formula")
 
     def tr(self, msg):
         return QCoreApplication.translate('SentinelSTACDialogBase', msg)
@@ -146,12 +149,11 @@ class MosaicWorker(QThread):
                 )
             )
 
-
-            tmp_dir       = Path(tempfile.mkdtemp(prefix="qgis_mosaic_"))
+            tmp_dir = Path(tempfile.mkdtemp(prefix="qgis_mosaic_"))
             per_band_vrts = []
-            bands         = p["bands"]
-            nodata        = p.get("nodata", 0)
-            n_bands       = len(bands)
+            bands = p["bands"]
+            nodata = p.get("nodata", 0)
+            n_bands = len(bands)
 
             for b_idx, band_name in enumerate(bands, 1):
                 urls = [
@@ -167,12 +169,12 @@ class MosaicWorker(QThread):
                     continue
 
                 self.progress.emit(
-                    self.tr("Mosaicking band {b} ({i}/{t}) — {n} scenes...").format(
+                    self.tr("Mosaicking band {b} ({i}/{t}) - {n} scenes...").format(
                         b=band_name, i=b_idx, t=n_bands, n=len(urls)
                     )
                 )
 
-                pre_vrt  = str(tmp_dir / f"pre_{b_idx:02d}_{band_name}.vrt")
+                pre_vrt = str(tmp_dir / f"pre_{b_idx:02d}_{band_name}.vrt")
                 band_vrt = str(tmp_dir / f"band_{b_idx:02d}_{band_name}.vrt")
 
                 gdal.BuildVRT(
@@ -201,16 +203,27 @@ class MosaicWorker(QThread):
                 self.progress_pct.emit(pct)
                 self.progress.emit(self.tr("  Band {b} done.").format(b=band_name))
 
-            if not per_band_vrts:
-                self.error.emit(self.tr("No bands could be processed."))
+            if len(per_band_vrts) != n_bands:
+                self.error.emit(
+                    self.tr("Only {done}/{total} requested bands could be processed.").format(
+                        done=len(per_band_vrts), total=n_bands
+                    )
+                )
                 return
 
-            out_vrt = str(tmp_dir / "mosaic.vrt")
+            stack_vrt = str(tmp_dir / "mosaic_stack.vrt")
             self.progress.emit(self.tr("Assembling multi-band VRT..."))
             gdal.BuildVRT(
-                out_vrt, per_band_vrts,
+                stack_vrt, per_band_vrts,
                 options=gdal.BuildVRTOptions(separate=True),
             )
+
+            final_vrt_path = stack_vrt
+            if self.formula:
+                final_vrt_path = str(tmp_dir / "mosaic_index.vrt")
+                self.progress.emit(self.tr("Applying spectral index formula..."))
+                create_derived_vrt(stack_vrt, final_vrt_path, self.formula)
+
             self.progress_pct.emit(85)
             self.progress.emit(self.tr("VRT ready."))
 
@@ -222,11 +235,11 @@ class MosaicWorker(QThread):
                         p=out_tif
                     )
                 )
-                self._export_tif(out_vrt, out_tif, p.get("compress", "DEFLATE"))
+                self._export_tif(final_vrt_path, out_tif, p.get("compress", "DEFLATE"))
                 self.progress.emit(self.tr("GeoTIFF export complete."))
 
             self.progress_pct.emit(100)
-            self.finished.emit(out_vrt, out_tif)
+            self.finished.emit(final_vrt_path, out_tif)
 
         except Exception as exc:
             self.error.emit("{}\n{}".format(exc, traceback.format_exc()))
