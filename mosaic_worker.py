@@ -23,7 +23,7 @@ class MosaicWorker(QThread):
         self.formula = params.get("formula")
 
     def tr(self, msg):
-        return QCoreApplication.translate('SentinelSTACDialogBase', msg)
+        return QCoreApplication.translate('SentinelSTACDialog', msg)
 
     def run(self):
         try:

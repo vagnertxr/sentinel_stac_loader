@@ -3,7 +3,7 @@ name=Quick VRT Imagery Loader
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 description=Loads satellite images from Microsoft Planetary Computer STAC API quickly
-version=0.7.1
+version=0.7.2
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
@@ -18,6 +18,7 @@ repository=https://github.com/vagnertxr/sentinel_stac_loader
 hasProcessingProvider=no
 
 changelog=
+    0.7.2 - Fixed translation loading, Windows tab text sizing, and QGIS 3 footprint drawing
     0.7.1 - Security scan fix for HTTPS thumbnail preview downloads
     0.7 - Added Mosaic functions, added footprint, new UI
     0.6 - Added QGIS 4.x / Qt6 compatibility, Spanish language support, previews, max cloud slider, revamped UI

@@ -13,7 +13,7 @@ from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
     QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsRectangle, QgsJsonUtils
+    QgsRectangle, QgsJsonUtils, QgsWkbTypes
 )
 from qgis.gui import QgsRubberBand
 from qgis.utils import iface
@@ -347,7 +347,9 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         QTabBar::tab {
             background: #313244;
             color: #cdd6f4;
-            padding: 6px 18px;
+            font-size: 9pt;
+            padding: 5px 14px;
+            min-width: 86px;
             border-radius: 4px 4px 0 0;
             margin-right: 2px;
         }
@@ -437,7 +439,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
 
 
     def tr(self, msg):
-        return QCoreApplication.translate("SentinelSTACDialogBase", msg)
+        return QCoreApplication.translate("SentinelSTACDialog", msg)
 
     def prepare_for_open(self):
         self._load_extent()
@@ -1041,7 +1043,6 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             return
 
         try:
-            import json
             dst_crs = iface.mapCanvas().mapSettings().destinationCrs()
             src_crs = QgsCoordinateReferenceSystem("EPSG:4326")
             xform = None
@@ -1053,8 +1054,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
                 # QGIS 4/Qt6 way
                 poly_type = Qgis.GeometryType.Polygon
             except AttributeError:
-                # QGIS 3 way
-                poly_type = 2
+                poly_type = QgsWkbTypes.PolygonGeometry
 
             for row in rows:
                 if row < 0 or row >= len(self.last_items):
@@ -1065,8 +1065,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
                 if not geom_dict:
                     continue
                     
-                # QgsJsonUtils.geometryFromGeoJson is the way in QGIS 3/4
-                qgs_geom = QgsJsonUtils.geometryFromGeoJson(json.dumps(geom_dict))
+                qgs_geom = self._geometry_from_geojson(geom_dict)
                 
                 if not qgs_geom or qgs_geom.isEmpty():
                     continue
@@ -1083,6 +1082,23 @@ class SentinelSTACDialog(QtWidgets.QDialog):
                 self._rubber_bands.append(rb)
         except Exception as e:
             QgsMessageLog.logMessage(f"Footprint error: {str(e)}", "QuickVRT", MsgLevel.Warning)
+
+    @staticmethod
+    def _geometry_from_geojson(geom_dict):
+        import json
+
+        geom_json = json.dumps(geom_dict)
+        try:
+            qgs_geom = QgsGeometry.fromJson(geom_json)
+            if qgs_geom and not qgs_geom.isEmpty():
+                return qgs_geom
+        except Exception:
+            pass
+
+        try:
+            return QgsJsonUtils.geometryFromGeoJson(geom_json)
+        except Exception:
+            return None
 
     def _clear_rubber_bands(self):
         for rb in self._rubber_bands:
