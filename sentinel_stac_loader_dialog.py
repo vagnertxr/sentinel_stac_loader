@@ -142,14 +142,18 @@ class ThumbnailWorker(QThread):
 
     def run(self):
         try:
-            if not self.url.lower().startswith(("http://", "https://")):
+            import urllib.parse
+            import urllib.request
+
+            parsed = urllib.parse.urlparse(self.url)
+            if parsed.scheme != "https" or not parsed.netloc:
                 self.failed.emit("Invalid URL")
                 return
-            import urllib.request
+
             req = urllib.request.Request(
                 self.url, headers={"User-Agent": "QuickVRTImageryLoader/0.7"}
             )
-            with urllib.request.urlopen(req, timeout=12) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:  # nosec B310
                 data = resp.read()
             pixmap = QPixmap()
             if not pixmap.loadFromData(data):

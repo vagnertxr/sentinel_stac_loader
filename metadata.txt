@@ -18,6 +18,7 @@ repository=https://github.com/vagnertxr/sentinel_stac_loader
 hasProcessingProvider=no
 
 changelog=
+    0.7.1 - Security scan fix for HTTPS thumbnail preview downloads
     0.7 - Added Mosaic functions, added footprint, new UI
     0.6 - Added QGIS 4.x / Qt6 compatibility, Spanish language support, previews, max cloud slider, revamped UI
     0.5 - Better UI, dependency manager, Portuguese language support, better icon
