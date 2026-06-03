@@ -445,7 +445,7 @@
      </font>
     </property>
     <property name="toolTip">
-     <string>Full image ID — hover to read, click 📋 to copy</string>
+     <string>Full image ID — hover to read, click to copy</string>
     </property>
     <property name="styleSheet">
      <string>color: #606060; font-size: 6pt; font-family: monospace;</string>
@@ -476,7 +476,7 @@
      <string>font-size: 10pt; border: none; background: transparent; color: #777777;</string>
     </property>
     <property name="text">
-     <string>📋</string>
+     <string>Copy</string>
     </property>
    </widget>
   </widget>

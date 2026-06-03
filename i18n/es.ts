@@ -2,141 +2,291 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="es" sourcelanguage="en">
 <context>
-<name>SentinelSTAC</name>
-<message>
-<source>&amp;Quick VRT Imagery Loader</source>
-<translation>&amp;Quick VRT Imagery Loader</translation>
-</message>
-<message>
-<source>Loads satellite images quickly</source>
-<translation>Carga imágenes de satélite rápidamente</translation>
-</message>
-<message>
-<source>Attention</source>
-<translation>Atención</translation>
-</message>
-<message>
-<source>Missing dependencies. Click on the plugin icon to try again.</source>
-<translation>Faltan dependencias. Haga clic en el icono del complemento para reintentar.</translation>
-</message>
-</context>
-<context>
-<name>SentinelSTACDialogBase</name>
-<message>
-<source>Quick VRT Imagery Loader</source>
-<translation>Quick VRT Imagery Loader</translation>
-</message>
-<message>
-<source>Select parameters for searching images in the current map extent.</source>
-<translation>Seleccione los parámetros para buscar imágenes en la extensión actual del mapa.</translation>
-</message>
-<message>
-<source>IMAGE PARAMETERS</source>
-<translation>PARÁMETROS DE IMAGEN</translation>
-</message>
-<message>
-<source>Satellite:</source>
-<translation>Satélite:</translation>
-</message>
-<message>
-<source>Composition:</source>
-<translation>Composición:</translation>
-</message>
-<message>
-<source>Start date:</source>
-<translation>Fecha inicial:</translation>
-</message>
-<message>
-<source>End date:</source>
-<translation>Fecha final:</translation>
-</message>
-<message>
-<source>Max clouds:</source>
-<translation>Nubes máx:</translation>
-</message>
-<message>
-<source>Filter images by maximum cloud cover percentage</source>
-<translation>Filtrar imágenes por el porcentaje máximo de nubes</translation>
-</message>
-<message>
-<source>List available images</source>
-<translation>Listar imágenes disponibles</translation>
-</message>
-<message>
-<source>Searching…</source>
-<translation>Buscando…</translation>
-</message>
-<message>
-<source>Searching images on Planetary Computer STAC API…</source>
-<translation>Buscando imágenes en la API STAC de Planetary Computer…</translation>
-</message>
-<message>
-<source>RESULTS</source>
-<translation>RESULTADOS</translation>
-</message>
-<message>
-<source>Index</source>
-<translation>Índice</translation>
-</message>
-<message>
-<source>Image date</source>
-<translation>Fecha de imagen</translation>
-</message>
-<message>
-<source>Clouds (%)</source>
-<translation>Nubes (%)</translation>
-</message>
-<message>
-<source>ID</source>
-<translation>ID</translation>
-</message>
-<message>
-<source>PREVIEW</source>
-<translation>VISTA PREVIA</translation>
-</message>
-<message>
-<source>Select an image to preview</source>
-<translation>Seleccione una imagen para previsualizar</translation>
-</message>
-<message>
-<source>No preview available</source>
-<translation>Vista previa no disponible</translation>
-</message>
-<message>
-<source>Loading…</source>
-<translation>Cargando…</translation>
-</message>
-<message>
-<source>Full image ID — hover to read, click 📋 to copy</source>
-<translation>ID completo de la imagen — pase el ratón para leer, clic en 📋 para copiar</translation>
-</message>
-<message>
-<source>Copy image ID to clipboard</source>
-<translation>Copiar ID de la imagen al portapapeles</translation>
-</message>
-<message>
-<source>Choose image:</source>
-<translation>Elegir imagen:</translation>
-</message>
-<message>
-<source>0 = Cleanest image, 1 = Second best, etc.</source>
-<translation>0 = Imagen más limpia, 1 = Segunda mejor, etc.</translation>
-</message>
-<message>
-<source>Sorted by cloud cover, lowest to highest. Click a row to preview.</source>
-<translation>Ordenado por cobertura de nubes (menor a mayor). Haga clic en una fila para ver la previa.</translation>
-</message>
-<message>
-<source>Load image</source>
-<translation>Cargar imagen</translation>
-</message>
-<message>
-<source>Search error</source>
-<translation>Error de búsqueda</translation>
-</message>
-<message>
-<source>Load error</source>
-<translation>Error al cargar</translation>
-</message>
-</context>
-</TS>
+    <name>SentinelSTAC</name>
+    <message>
+        <location filename="../sentinel_stac_loader.py" line="86" />
+        <source>&amp;Quick VRT Imagery Loader</source>
+        <translation>&amp;Cargador Rápido de Imágenes VRT</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader.py" line="129" />
+        <source>Loads satellite images quickly</source>
+        <translation>Carga imágenes de satélite rápidamente</translation>
+    </message>
+</context><context>
+    <name>SentinelSTACDialog</name>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="764" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="373" />
+        <source>Quick VRT Imagery Loader</source>
+        <translation>Cargador Rápido de Imágenes VRT</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="412" />
+        <source>Browser</source>
+        <translation>Explorador</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="413" />
+        <source>Auto-Mosaic</source>
+        <translation>Auto-Mosaico</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="795" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="778" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="588" />
+        <source>Date</source>
+        <translation>Fecha</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="795" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="778" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="590" />
+        <source>Clouds</source>
+        <translation>Nubes</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="592" />
+        <source>ID</source>
+        <translation>ID</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="597" />
+        <source>Copy ID</source>
+        <translation>Copiar ID</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="598" />
+        <source>Show Footprint</source>
+        <translation>Mostrar Huella</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="610" />
+        <source>Output .tif path</source>
+        <translation>Ruta del .tif de salida</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="654" />
+        <source>Least Clouds</source>
+        <translation>Menos Nubes</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="654" />
+        <source>Most Recent</source>
+        <translation>Más Reciente</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="708" />
+        <source>Progress log</source>
+        <translation>Log de progreso</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="710" />
+        <source>Clear</source>
+        <translation>Limpiar</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="766" />
+        <source>Browse Satellite product collections, load imagery and build compositions and mosaics very quickly!</source>
+        <translation>¡Explore colecciones de satélite, cargue imágenes y cree composiciones y mosaicos rápidamente!</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="768" />
+        <source>Search Parameters</source>
+        <translation>Parámetros de Búsqueda</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="769" />
+        <source>Satellite:</source>
+        <translation>Satélite:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="770" />
+        <source>Composition:</source>
+        <translation>Composición:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="771" />
+        <source>Period:</source>
+        <translation>Período:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="772" />
+        <source> to </source>
+        <translation> hasta </translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="773" />
+        <source>Max clouds:</source>
+        <translation>Nubes máx:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="774" />
+        <source>Search area:</source>
+        <translation>Área de búsqueda:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="775" />
+        <source>🗺️ Get from map canvas</source>
+        <translation>🗺️ Obtener de la vista de mapa</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="871" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="852" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="776" />
+        <source>🔍 Search available images</source>
+        <translation>🔍 Buscar imágenes disponibles</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="778" />
+        <source>#</source>
+        <translation>#</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="795" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="778" />
+        <source>Scene ID</source>
+        <translation>ID de Escena</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="780" />
+        <source>Load Selected</source>
+        <translation>Cargar Seleccionadas</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="781" />
+        <source>Mosaic Selected</source>
+        <translation>Mosaico de Seleccionadas</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="782" />
+        <source>📋 Copy ID</source>
+        <translation>📋 Copiar ID</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="783" />
+        <source>Toggle Footprint</source>
+        <translation>Alternar Huella</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="784" />
+        <source>Export GeoTIFF (optional)</source>
+        <translation>Exportar GeoTIFF (opcional)</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="791" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="785" />
+        <source>File:</source>
+        <translation>Archivo:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="792" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="786" />
+        <source>Compress:</source>
+        <translation>Compresión:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="787" />
+        <source>Auto-Mosaic Options</source>
+        <translation>Opciones de Auto-Mosaico</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="788" />
+        <source>Scene limit:</source>
+        <translation>Límite de escenas:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="789" />
+        <source>Priority:</source>
+        <translation>Prioridad:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="790" />
+        <source>Export GeoTIFF</source>
+        <translation>Exportar GeoTIFF</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="793" />
+        <source>Selected scenes:</source>
+        <translation>Escenas seleccionadas:</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="797" />
+        <source>Generate Mosaic</source>
+        <translation>Generar Mosaico</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="837" />
+        <source>Searching…</source>
+        <translation>Buscando…</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="873" />
+        <source>Search error</source>
+        <translation>Error de búsqueda</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="902" />
+        <source>No preview available</source>
+        <translation>Vista previa no disponible</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="906" />
+        <source>Loading…</source>
+        <translation>Cargando…</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="938" />
+        <source>Select an image to preview</source>
+        <translation>Seleccione una imagen para visualizar</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1103" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="1076" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="1016" />
+        <source>Warning</source>
+        <translation>Aviso</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1103" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="1076" />
+        <location filename="../sentinel_stac_loader_dialog.py" line="1016" />
+        <source>Please provide the output .tif path.</source>
+        <translation>Por favor, proporcione la ruta del archivo .tif de salida.</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1065" />
+        <source>Load error</source>
+        <translation>Error al cargar</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1163" />
+        <source>Mosaic – {}</source>
+        <translation>Mosaico – {}</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1167" />
+        <source>GeoTIFF – {}</source>
+        <translation>GeoTIFF – {}</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1171" />
+        <source>Success</source>
+        <translation>Éxito</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1171" />
+        <source>Mosaic ready.</source>
+        <translation>Mosaico listo.</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1179" />
+        <source>Mosaic error</source>
+        <translation>Error en el mosaico</translation>
+    </message>
+    <message>
+        <location filename="../sentinel_stac_loader_dialog.py" line="1188" />
+        <source>Save GeoTIFF</source>
+        <translation>Guardar GeoTIFF</translation>
+    </message>
+</context></TS>
