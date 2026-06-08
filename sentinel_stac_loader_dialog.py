@@ -111,7 +111,7 @@ LANDSAT_COMPOSITIONS = {
     "True Color (R, G, B)":                    ["red", "green", "blue"],
     "False Color NIR (NIR, R, G)":             ["nir08", "red", "green"],
     "Agriculture (SWIR1, NIR, B)":             ["swir16", "nir08", "blue"],
-    "Healthy Vegetation (NIR, SWIR1, R)":      ["nir08", "swir16", "red"],
+    "Healthy Vegetation (SWIR1, NIR, R)":      ["swir16", "nir08", "red"],
     "Geology (SWIR2, SWIR1, B)":               ["swir22", "swir16", "blue"],
     "Urban / Soil (SWIR2, SWIR1, R)":          ["swir22", "swir16", "red"],
     "Bathymetric (G, R, Coastal)":             ["green", "red", "coastal"],
