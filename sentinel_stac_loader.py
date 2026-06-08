@@ -158,10 +158,6 @@ class SentinelSTAC:
         
         if self.dlg is None:
             self.dlg = SentinelSTACDialog()
-            if hasattr(self.dlg, 'btn_carregar'):
-                self.dlg.btn_carregar.clicked.connect(self.dlg.process_stac_load)
-            if hasattr(self.dlg, 'btn_listar'):
-                self.dlg.btn_listar.clicked.connect(self.dlg.popular_tabela)
 
         self.dlg.prepare_for_open()
         self.dlg.show()

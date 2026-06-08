@@ -9,7 +9,7 @@ INDEX_FORMULAS = {
         "description": "NDVI",
         "band_count": 2,
         "code": """import numpy as np
-def ndvi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res):
+def ndvi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res=None):
     nir = in_ar[0].astype(np.float32)
     red = in_ar[1].astype(np.float32)
     denom = nir + red
@@ -21,7 +21,7 @@ def ndvi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, bu
         "description": "NDWI",
         "band_count": 2,
         "code": """import numpy as np
-def ndwi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res):
+def ndwi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res=None):
     green = in_ar[0].astype(np.float32)
     nir = in_ar[1].astype(np.float32)
     denom = green + nir
@@ -33,7 +33,7 @@ def ndwi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, bu
         "description": "NDMI",
         "band_count": 2,
         "code": """import numpy as np
-def ndmi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res):
+def ndmi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res=None):
     nir = in_ar[0].astype(np.float32)
     swir1 = in_ar[1].astype(np.float32)
     denom = nir + swir1
@@ -45,7 +45,7 @@ def ndmi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, bu
         "description": "EVI",
         "band_count": 3,
         "code": """import numpy as np
-def evi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res):
+def evi(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, buf_xsize, buf_ysize, res=None):
     nir = in_ar[0].astype(np.float32) * 0.0001
     red = in_ar[1].astype(np.float32) * 0.0001
     blue = in_ar[2].astype(np.float32) * 0.0001

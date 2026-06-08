@@ -8,12 +8,13 @@ from datetime import date, timedelta
 
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt, QCoreApplication, QSize, pyqtSignal, QThread
-from qgis.PyQt.QtGui import QPixmap, QFont, QColor, QIcon
+from qgis.PyQt.QtGui import QPixmap, QFont, QColor, QIcon, QPalette
 from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
     QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsRectangle, QgsJsonUtils, QgsWkbTypes
+    QgsRectangle, QgsJsonUtils, QgsWkbTypes,
+    QgsColorRampShader, QgsRasterShader, QgsSingleBandPseudoColorRenderer
 )
 from qgis.gui import QgsRubberBand
 from qgis.utils import iface
@@ -250,10 +251,26 @@ class VrtWorker(QThread):
                     if self.formula:
                         tmp_dir = Path(tempfile.mkdtemp(prefix="qgis_vrt_"))
                         stack_vrt = str(tmp_dir / "stack.vrt")
-                        gdal.BuildVRT(stack_vrt, band_hrefs, options=gdal.BuildVRTOptions(separate=True))
+                        stack_ds = gdal.BuildVRT(
+                            stack_vrt,
+                            band_hrefs,
+                            options=gdal.BuildVRTOptions(
+                                separate=True,
+                                resolution="highest",
+                                resampleAlg="bilinear",
+                            ),
+                        )
+                        if stack_ds is None:
+                            raise RuntimeError("Could not build source stack VRT")
+                        stack_ds.FlushCache()
+                        stack_ds = None
 
                         derived_vrt = str(tmp_dir / "derived.vrt")
                         create_derived_vrt(stack_vrt, derived_vrt, self.formula)
+                        test_ds = gdal.Open(derived_vrt)
+                        if test_ds is None:
+                            raise RuntimeError("Could not open derived index VRT")
+                        test_ds = None
                         output_path = derived_vrt
                     else:
                         result = processing.run(
@@ -412,7 +429,8 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.setWindowTitle(self.tr("Quick VRT Imagery Loader"))
         self.setMinimumSize(QSize(760, 560))
         self.setSizeGripEnabled(True)
-        self.setStyleSheet(self._STYLE)
+        self._theme = self._theme_colors()
+        self.setStyleSheet(self._style_for_theme())
 
         # State
         self._collection   = "sentinel-2-l2a"
@@ -440,6 +458,60 @@ class SentinelSTACDialog(QtWidgets.QDialog):
 
     def tr(self, msg):
         return QCoreApplication.translate("SentinelSTACDialog", msg)
+
+    @staticmethod
+    def _theme_colors():
+        palette = QtWidgets.QApplication.palette()
+        window_role = QPalette.ColorRole.Window if _QT6 else QPalette.Window
+        is_dark = palette.color(window_role).lightness() < 128
+        if is_dark:
+            return {
+                "fg": "#cdd6f4",
+                "muted": "#6c7086",
+                "accent": "#89b4fa",
+                "accent_hover": "#b4d0fb",
+                "accent_pressed": "#74a8f9",
+                "accent_text": "#1e1e2e",
+                "danger": "#f38ba8",
+                "success": "#a6e3a1",
+            }
+        return {
+            "fg": "#1f2937",
+            "muted": "#596579",
+            "accent": "#1d5fbf",
+            "accent_hover": "#2b6fd3",
+            "accent_pressed": "#154f9f",
+            "accent_text": "#ffffff",
+            "danger": "#b42318",
+            "success": "#116329",
+        }
+
+    def _style_for_theme(self):
+        if self._theme["accent_text"] != "#ffffff":
+            return self._STYLE
+        replacements = {
+            "#1e1e2e": "#f6f7f9",
+            "#cdd6f4": self._theme["fg"],
+            "#45475a": "#c9d1dc",
+            "#89b4fa": self._theme["accent"],
+            "#313244": "#ffffff",
+            "#181825": "#ffffff",
+            "#11111b": "#f3f5f7",
+            "#6c7086": self._theme["muted"],
+            "#585b70": "#8a94a6",
+            "#b4d0fb": self._theme["accent_hover"],
+            "#74a8f9": self._theme["accent_pressed"],
+            "#f38ba8": self._theme["danger"],
+            "#a6e3a1": self._theme["success"],
+        }
+        style = self._STYLE
+        for old, new in replacements.items():
+            style = style.replace(old, new)
+        return style
+
+    def _style_text(self, color_key="fg", extra=""):
+        color = self._theme[color_key]
+        return "color: {};{}".format(color, (" " + extra) if extra else "")
 
     def prepare_for_open(self):
         self._load_extent()
@@ -488,9 +560,9 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         f.setPointSize(14)
         f.setBold(True)
         self.lbl_title.setFont(f)
-        self.lbl_title.setStyleSheet("color: #cdd6f4;")
+        self.lbl_title.setStyleSheet(self._style_text("fg"))
         self.lbl_subtitle = QtWidgets.QLabel()
-        self.lbl_subtitle.setStyleSheet("color: #6c7086; font-size: 9pt;")
+        self.lbl_subtitle.setStyleSheet(self._style_text("muted", "font-size: 9pt;"))
         title_lay.addWidget(self.lbl_title)
         title_lay.addWidget(self.lbl_subtitle)
         lay.addLayout(title_lay)
@@ -550,7 +622,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.lbl_clouds_val = QtWidgets.QLabel(f"{_DEFAULT_MAX_CLOUDS}%")
         self.lbl_clouds_val.setFixedWidth(36)
         self.lbl_clouds_val.setAlignment(_AlignCenter)
-        self.lbl_clouds_val.setStyleSheet("color: #89b4fa; font-weight: bold;")
+        self.lbl_clouds_val.setStyleSheet(self._style_text("accent", "font-weight: bold;"))
         cloud_lay.addWidget(self.slider_clouds)
         cloud_lay.addWidget(self.lbl_clouds_val)
         g.addLayout(cloud_lay, 1, 3)
@@ -566,7 +638,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         for lbl, sp in [("W:", self.sp_west), ("S:", self.sp_south),
                          ("E:", self.sp_east),  ("N:", self.sp_north)]:
             l = QtWidgets.QLabel(lbl)
-            l.setStyleSheet("color: #89b4fa; font-weight: bold; margin-left: 4px;")
+            l.setStyleSheet(self._style_text("accent", "font-weight: bold; margin-left: 4px;"))
             bbox_lay.addWidget(l)
             bbox_lay.addWidget(sp)
         bbox_lay.addSpacing(6)
@@ -633,18 +705,21 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.lbl_thumbnail.setScaledContents(False)
         self.lbl_thumbnail.installEventFilter(self)
         self.lbl_thumbnail.setStyleSheet(
-            "background-color: #11111b; border-radius: 4px; color: #585b70;"
+            "background-color: {}; border-radius: 4px; color: {};".format(
+                "#11111b" if self._theme["accent_text"] != "#ffffff" else "#f3f5f7",
+                "#585b70" if self._theme["accent_text"] != "#ffffff" else "#8a94a6",
+            )
         )
         right_lay.addWidget(self.lbl_thumbnail, stretch=1)
 
         meta_grid = QtWidgets.QGridLayout()
         self.lbl_thumb_date   = self._meta_label()
         self.lbl_thumb_clouds = self._meta_label()
-        self.lbl_thumb_clouds.setStyleSheet("color: #89b4fa; font-weight: bold;")
+        self.lbl_thumb_clouds.setStyleSheet(self._style_text("accent", "font-weight: bold;"))
         self.lbl_thumb_id     = QtWidgets.QLabel()
         self.lbl_thumb_id.setWordWrap(True)
         self.lbl_thumb_id.setStyleSheet(
-            "font-family: monospace; font-size: 8pt; color: #6c7086;"
+            self._style_text("muted", "font-family: monospace; font-size: 8pt;")
         )
         meta_grid.addWidget(QtWidgets.QLabel(self.tr("Date")), 0, 0)
         meta_grid.addWidget(self.lbl_thumb_date,   0, 1)
@@ -749,7 +824,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         scene_lay = QtWidgets.QVBoxLayout(scene_w)
         scene_lay.setContentsMargins(0, 0, 0, 0)
         self.lbl_selected_scenes = QtWidgets.QLabel()
-        self.lbl_selected_scenes.setStyleSheet("font-weight: bold; color: #89b4fa;")
+        self.lbl_selected_scenes.setStyleSheet(self._style_text("accent", "font-weight: bold;"))
         scene_lay.addWidget(self.lbl_selected_scenes)
         self.tableMosaic = QtWidgets.QTableWidget()
         self.tableMosaic.setColumnCount(3)
@@ -767,7 +842,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         log_lay.setContentsMargins(0, 0, 0, 0)
         log_hdr = QtWidgets.QHBoxLayout()
         lbl_log = QtWidgets.QLabel(self.tr("Progress log"))
-        lbl_log.setStyleSheet("font-weight: bold; color: #89b4fa;")
+        lbl_log.setStyleSheet(self._style_text("accent", "font-weight: bold;"))
         self.btn_clear_log = QtWidgets.QPushButton(self.tr("Clear"))
         self.btn_clear_log.setFixedHeight(22)
         self.btn_clear_log.setFixedWidth(60)
@@ -1169,7 +1244,74 @@ class SentinelSTACDialog(QtWidgets.QDialog):
     def _on_vrt_ready(self, vrt_path, layer_name):
         layer = QgsRasterLayer(vrt_path, layer_name)
         if layer.isValid():
+            formula = self._index_formula_from_layer_name(layer_name)
+            if formula:
+                self._apply_index_renderer(layer, formula)
             QgsProject.instance().addMapLayer(layer)
+
+    @staticmethod
+    def _index_formula_from_layer_name(layer_name):
+        formula = layer_name.split(" - ", 1)[0].lower()
+        return formula if formula in {"ndvi", "ndwi", "ndmi", "evi"} else None
+
+    @staticmethod
+    def _apply_index_renderer(layer, formula):
+        provider = layer.dataProvider()
+        ramp_items = SentinelSTACDialog._index_color_ramp(formula)
+        color_ramp = QgsColorRampShader()
+        try:
+            color_ramp.setColorRampType(QgsColorRampShader.Type.Interpolated)
+        except AttributeError:
+            color_ramp.setColorRampType(QgsColorRampShader.Interpolated)
+        color_ramp.setColorRampItemList(
+            [
+                QgsColorRampShader.ColorRampItem(value, QColor(color), label)
+                for value, color, label in ramp_items
+            ]
+        )
+
+        raster_shader = QgsRasterShader()
+        raster_shader.setRasterShaderFunction(color_ramp)
+        renderer = QgsSingleBandPseudoColorRenderer(provider, 1, raster_shader)
+        layer.setRenderer(renderer)
+        layer.triggerRepaint()
+
+    @staticmethod
+    def _index_color_ramp(formula):
+        ramps = {
+            "ndvi": [
+                (-1.0, "#1f5aa6", "Water / cloud shadow"),
+                (0.0, "#d9c89e", "Bare soil"),
+                (0.2, "#f3e55b", "Sparse vegetation"),
+                (0.5, "#48a23f", "Healthy vegetation"),
+                (0.8, "#0b5d1e", "Dense vegetation"),
+                (1.0, "#063b14", "Very dense vegetation"),
+            ],
+            "evi": [
+                (-1.0, "#4c2c69", "Low response"),
+                (0.0, "#d9c89e", "Bare soil"),
+                (0.2, "#f3e55b", "Sparse vegetation"),
+                (0.5, "#48a23f", "Healthy vegetation"),
+                (0.8, "#0b5d1e", "Dense vegetation"),
+                (1.0, "#063b14", "Very dense vegetation"),
+            ],
+            "ndwi": [
+                (-1.0, "#8c510a", "Dry land"),
+                (-0.1, "#dfc27d", "Low water signal"),
+                (0.0, "#f7f7f7", "Neutral"),
+                (0.2, "#80cdc1", "Moist / shallow water"),
+                (0.6, "#018571", "Water"),
+                (1.0, "#003c30", "Strong water signal"),
+            ],
+            "ndmi": [
+                (-1.0, "#8c510a", "Very dry"),
+                (0.0, "#dfc27d", "Dry"),
+                (0.2, "#c7eae5", "Moderate moisture"),
+                (0.6, "#35978f", "Moist"),
+                (1.0, "#01665e", "Very moist"),
+            ],
+        }
+        return ramps.get(formula, ramps["ndvi"])
 
     def _on_vrt_finished(self):
         self.btn_carregar.setEnabled(True)
@@ -1299,6 +1441,9 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         comp = self.comboBox_composicao.currentText()
         layer = QgsRasterLayer(vrt, self.tr("Mosaic – {}").format(comp))
         if layer.isValid():
+            comp_data = self._compositions.get(comp, {})
+            if isinstance(comp_data, dict) and comp_data.get("formula"):
+                self._apply_index_renderer(layer, comp_data.get("formula"))
             QgsProject.instance().addMapLayer(layer)
         if tif:
             lt = QgsRasterLayer(tif, self.tr("GeoTIFF – {}").format(comp))
@@ -1339,11 +1484,10 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         sp.setStyleSheet("font-size: 8pt;")
         return sp
 
-    @staticmethod
-    def _meta_label():
+    def _meta_label(self):
         lbl = QtWidgets.QLabel()
         lbl.setAlignment(_AlignCenter)
-        lbl.setStyleSheet("color: #cdd6f4; font-size: 9pt;")
+        lbl.setStyleSheet(self._style_text("fg", "font-size: 9pt;"))
         return lbl
 
     def closeEvent(self, event):
