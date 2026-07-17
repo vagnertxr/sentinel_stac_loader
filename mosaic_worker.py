@@ -114,14 +114,18 @@ class MosaicWorker(QThread):
                 selected_items.append(item)
                 uncovered_area = uncovered_area.difference(item_geom).buffer(0)
 
-                clouds      = item.properties.get("eo:cloud_cover", 0)
+                # eo:cloud_cover is an explicit null for CBERS DN products
+                # (WPM, PAN10M, PAN5M, WPM pansharpened TCI) - INPE doesn't
+                # compute it for them.
+                clouds      = item.properties.get("eo:cloud_cover")
+                clouds_text = "N/A" if clouds is None else f"{clouds:.1f}%"
                 dt          = item.properties.get("datetime", "")[:10]
                 covered_pct = (1.0 - uncovered_area.area / total_bbox_area) * 100
 
-                self.item_selected.emit(dt, f"{clouds:.1f}%", item.id)
+                self.item_selected.emit(dt, clouds_text, item.id)
                 self.progress.emit(
-                    self.tr("  Added {id}  clouds={c:.1f}%  coverage={pct:.1f}%").format(
-                        id=item.id, c=clouds, pct=covered_pct
+                    self.tr("  Added {id}  clouds={c}  coverage={pct:.1f}%").format(
+                        id=item.id, c=clouds_text, pct=covered_pct
                     )
                 )
 

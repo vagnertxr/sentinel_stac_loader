@@ -239,6 +239,22 @@ _DEFAULT_MAX_CLOUDS = 40    # nuvens: até 40 %
 _DEFAULT_MAX_SCENES = 50    # limite de cenas no Auto-Mosaic
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+def _cloud_cover(properties):
+    """eo:cloud_cover is an explicit null for CBERS DN products (WPM, PAN10M,
+    PAN5M, WPM pansharpened TCI) since INPE doesn't compute it for them."""
+    return properties.get("eo:cloud_cover")
+
+
+def _passes_cloud_filter(properties, max_clouds):
+    cc = _cloud_cover(properties)
+    return cc is None or cc <= max_clouds
+
+
+def _format_clouds(properties):
+    cc = _cloud_cover(properties)
+    return "N/A" if cc is None else f"{cc:.1f}%"
+
 class ThumbnailWorker(QThread):
     thumbnail_ready = pyqtSignal(QPixmap)
     failed          = pyqtSignal(str)
@@ -295,12 +311,18 @@ class SearchWorker(QThread):
                 datetime=f"{self.start_date}/{self.end_date}",
             )
             items = list(search.get_all_items())
+            # Unknown cloud cover sorts last but is never filtered out - some
+            # collections (CBERS DN products) simply don't compute it.
             items = sorted(
-                items, key=lambda x: x.properties.get("eo:cloud_cover", 100)
+                items,
+                key=lambda x: (
+                    _cloud_cover(x.properties)
+                    if _cloud_cover(x.properties) is not None else 101
+                ),
             )
             items = [
                 i for i in items
-                if i.properties.get("eo:cloud_cover", 100) <= self.max_clouds
+                if _passes_cloud_filter(i.properties, self.max_clouds)
             ]
             self.search_done.emit(items)
         except Exception as e:
@@ -399,9 +421,8 @@ class VrtWorker(QThread):
                         )
                         output_path = result["OUTPUT"]
 
-                    clouds     = item.properties.get("eo:cloud_cover", 0)
                     prefix     = f"{self.prefix}_" if self.prefix else ""
-                    layer_name = f"{prefix}{item.id} ({clouds:.1f}% clouds)"
+                    layer_name = f"{prefix}{item.id} (clouds: {_format_clouds(item.properties)})"
                     if self.formula:
                         layer_name = f"{self.formula.upper()} - {layer_name}"
 
@@ -1136,14 +1157,13 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self.tableWidget.setRowCount(0)
         for idx, item in enumerate(items):
             self.tableWidget.insertRow(idx)
-            cc = item.properties.get("eo:cloud_cover", 0)
             self.tableWidget.setItem(idx, 0, QtWidgets.QTableWidgetItem(str(idx + 1)))
             self.tableWidget.setItem(
                 idx, 1, QtWidgets.QTableWidgetItem(
                     item.properties.get("datetime", "N/A")[:10]
                 )
             )
-            self.tableWidget.setItem(idx, 2, QtWidgets.QTableWidgetItem(f"{cc:.1f}%"))
+            self.tableWidget.setItem(idx, 2, QtWidgets.QTableWidgetItem(_format_clouds(item.properties)))
             self.tableWidget.setItem(idx, 3, QtWidgets.QTableWidgetItem(item.id))
         self.tableWidget.resizeColumnsToContents()
         self._reset_preview()
@@ -1160,8 +1180,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         # Immediate UI feedback for metadata
         item = self.last_items[row]
         self.lbl_thumb_date.setText(item.properties.get("datetime", "N/A")[:10])
-        cc = item.properties.get("eo:cloud_cover", 0)
-        self.lbl_thumb_clouds.setText(f"{cc:.1f}%")
+        self.lbl_thumb_clouds.setText(_format_clouds(item.properties))
         self.lbl_thumb_id.setText(item.id)
         self.lbl_thumb_id.setToolTip(item.id)
         
