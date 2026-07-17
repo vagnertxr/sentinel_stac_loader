@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/plugins/sentinel_stac_loader" >
-        <file>icon.png</file>
-    </qresource>
-</RCC>
