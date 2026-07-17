@@ -23,13 +23,21 @@ class MosaicWorker(QThread):
         self.formula = params.get("formula")
 
     def tr(self, msg):
+        # Context kept as the pre-1.0 class name so existing pt/es .qm translations stay matched.
         return QCoreApplication.translate('SentinelSTACDialog', msg)
 
     def run(self):
         try:
-            import planetary_computer as pc
             import pystac_client
             from shapely.geometry import box, mapping, shape
+
+            p = self.params
+            needs_signing = p.get("needs_signing", True)
+            catalog_url = p.get("catalog_url", "https://planetarycomputer.microsoft.com/api/stac/v1")
+
+            pc = None
+            if needs_signing:
+                import planetary_computer as pc
 
             gdal.SetConfigOption("GDAL_HTTP_MAX_RETRY", "5")
             gdal.SetConfigOption("GDAL_HTTP_RETRY_DELAY", "3")
@@ -37,13 +45,12 @@ class MosaicWorker(QThread):
             gdal.SetConfigOption("GDAL_CACHEMAX", "512")
             gdal.SetConfigOption("GDAL_HTTP_MERGE_CONSECUTIVE_HTTP_RETRIEVALS", "YES")
 
-            p = self.params
             self.progress_pct.emit(0)
-            self.progress.emit(self.tr("Connecting to Planetary Computer STAC..."))
+            self.progress.emit(self.tr("Connecting to STAC catalog..."))
 
             catalog = pystac_client.Client.open(
-                "https://planetarycomputer.microsoft.com/api/stac/v1",
-                modifier=pc.sign_inplace,
+                catalog_url,
+                modifier=pc.sign_inplace if needs_signing else None,
             )
 
             bbox_coords     = p["bbox"]
@@ -51,8 +58,11 @@ class MosaicWorker(QThread):
             total_bbox_area = bbox_poly.area
 
             if p.get("items_list"):
-                self.progress.emit(self.tr("Re-signing provided items..."))
-                all_items = [pc.sign(item) for item in p["items_list"]]
+                if needs_signing:
+                    self.progress.emit(self.tr("Re-signing provided items..."))
+                    all_items = [pc.sign(item) for item in p["items_list"]]
+                else:
+                    all_items = list(p["items_list"])
             else:
                 self.progress.emit(
                     self.tr("Searching scenes ({col}) {s} to {e}, clouds < {c}%...").format(
@@ -127,8 +137,9 @@ class MosaicWorker(QThread):
             )
             self.progress_pct.emit(20)
 
-            self.progress.emit(self.tr("Re-signing selected scenes..."))
-            selected_items = [pc.sign(item) for item in selected_items]
+            if needs_signing:
+                self.progress.emit(self.tr("Re-signing selected scenes..."))
+                selected_items = [pc.sign(item) for item in selected_items]
 
             s_srs = osr.SpatialReference()
             s_srs.ImportFromEPSG(4326)
@@ -213,9 +224,12 @@ class MosaicWorker(QThread):
 
             stack_vrt = str(tmp_dir / "mosaic_stack.vrt")
             self.progress.emit(self.tr("Assembling multi-band VRT..."))
+            # Only stack as distinct bands when there's more than one single-band
+            # source; a lone "band" that's actually a pre-fused multi-band asset
+            # (e.g. a pansharpened TCI) must pass through with its native bands.
             gdal.BuildVRT(
                 stack_vrt, per_band_vrts,
-                options=gdal.BuildVRTOptions(separate=True),
+                options=gdal.BuildVRTOptions(separate=len(per_band_vrts) > 1),
             )
 
             final_vrt_path = stack_vrt

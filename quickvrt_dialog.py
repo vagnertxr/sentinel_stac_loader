@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-SentinelSTACDialog - UI layer for Quick VRT Imagery Loader.
+QuickVRTDialog - UI layer for Quick VRT Imagery Loader.
 """
 
 import os
@@ -127,6 +127,112 @@ LANDSAT_COMPOSITIONS = {
     "NDMI (Normalized Difference Moisture)":   {"bands": ["nir08", "swir16"], "formula": "ndmi"},
 }
 
+# CBERS band compositions (INPE / Brazil Data Cube STAC). Band roles verified
+# against live item assets: MUX/WFI Surface Reflectance share the same
+# blue/green/red/nir layout (only the band numbers shift), WPM adds a
+# panchromatic band, and PAN10M has no blue band at all.
+CBERS_MUX_COMPOSITIONS = {
+    "True Color (B7, B6, B5)":                 ["BAND7", "BAND6", "BAND5"],
+    "False Color Infrared (B8, B7, B6)":       ["BAND8", "BAND7", "BAND6"],
+    "NDVI (Normalized Difference Vegetation)": {"bands": ["BAND8", "BAND7"], "formula": "ndvi"},
+    "NDWI (Normalized Difference Water)":      {"bands": ["BAND6", "BAND8"], "formula": "ndwi"},
+}
+
+CBERS_WFI_COMPOSITIONS = {
+    "True Color (B15, B14, B13)":              ["BAND15", "BAND14", "BAND13"],
+    "False Color Infrared (B16, B15, B14)":    ["BAND16", "BAND15", "BAND14"],
+    "NDVI (Normalized Difference Vegetation)": {"bands": ["BAND16", "BAND15"], "formula": "ndvi"},
+    "NDWI (Normalized Difference Water)":      {"bands": ["BAND14", "BAND16"], "formula": "ndwi"},
+}
+
+CBERS_WPM_COMPOSITIONS = {
+    "True Color (B3, B2, B1) 8m":              ["BAND3", "BAND2", "BAND1"],
+    "False Color Infrared (B4, B3, B2) 8m":    ["BAND4", "BAND3", "BAND2"],
+    "Panchromatic (B0) 2m":                    ["BAND0"],
+    "NDVI (Normalized Difference Vegetation)": {"bands": ["BAND4", "BAND3"], "formula": "ndvi"},
+    "NDWI (Normalized Difference Water)":      {"bands": ["BAND2", "BAND4"], "formula": "ndwi"},
+}
+
+# The PCA-fused product ships a single pre-pansharpened 3-band RGB asset
+# ("tci"), not separate single-band files, so its only "composition" is that
+# asset itself.
+CBERS_WPM_FUSED_COMPOSITIONS = {
+    "True Color Pansharpened (TCI) 2m": ["tci"],
+}
+
+CBERS_PAN10M_COMPOSITIONS = {
+    "Color Infrared (B4, B3, B2) 10m":         ["BAND4", "BAND3", "BAND2"],
+    "NDVI (Normalized Difference Vegetation)": {"bands": ["BAND4", "BAND3"], "formula": "ndvi"},
+}
+
+CBERS_PAN5M_COMPOSITIONS = {
+    "Panchromatic (B1) 5m": ["BAND1"],
+}
+
+# STAC providers available to the user. Each satellite entry carries
+# everything downstream code needs to stay provider-agnostic: which
+# collection to query, how to build compositions, whether assets need
+# Planetary Computer signing, the nodata value for mosaic warping, and a
+# short prefix used when naming loaded layers.
+STAC_PROVIDERS = [
+    {
+        "name": "Microsoft Planetary Computer",
+        "url": "https://planetarycomputer.microsoft.com/api/stac/v1",
+        "needs_signing": True,
+        "thumbnail_asset": "rendered_preview",
+        "satellites": [
+            {
+                "label": "Sentinel-2 L2A", "collection": "sentinel-2-l2a",
+                "compositions": SENTINEL2_COMPOSITIONS, "prefix": "S2", "nodata": 0,
+            },
+            {
+                "label": "Landsat Collection 2 Level-2", "collection": "landsat-c2-l2",
+                "compositions": LANDSAT_COMPOSITIONS, "prefix": "LS", "nodata": 0,
+            },
+        ],
+    },
+    {
+        "name": "INPE / Brazil Data Cube (CBERS)",
+        "url": "https://data.inpe.br/bdc/stac/v1",
+        "needs_signing": False,
+        "thumbnail_asset": "thumbnail",
+        "satellites": [
+            {
+                "label": "CBERS-4 MUX (20m)", "collection": "CB4-MUX-L4-SR-1",
+                "compositions": CBERS_MUX_COMPOSITIONS, "prefix": "CB4-MUX", "nodata": -9999,
+            },
+            {
+                "label": "CBERS-4A MUX (16.5m)", "collection": "CB4A-MUX-L4-SR-1",
+                "compositions": CBERS_MUX_COMPOSITIONS, "prefix": "CB4A-MUX", "nodata": -9999,
+            },
+            {
+                "label": "CBERS-4 WFI (64m)", "collection": "CB4-WFI-L4-SR-1",
+                "compositions": CBERS_WFI_COMPOSITIONS, "prefix": "CB4-WFI", "nodata": -9999,
+            },
+            {
+                "label": "CBERS-4A WFI (55m)", "collection": "CB4A-WFI-L4-SR-1",
+                "compositions": CBERS_WFI_COMPOSITIONS, "prefix": "CB4A-WFI", "nodata": -9999,
+            },
+            {
+                "label": "CBERS-4A WPM Multispectral + Pan (8m/2m)", "collection": "CB4A-WPM-L4-DN-1",
+                "compositions": CBERS_WPM_COMPOSITIONS, "prefix": "CB4A-WPM", "nodata": 0,
+            },
+            {
+                "label": "CBERS-4A WPM Pansharpened True Color (2m)", "collection": "CB4A-WPM-PCA-FUSED-1",
+                "compositions": CBERS_WPM_FUSED_COMPOSITIONS, "prefix": "CB4A-WPM-TCI", "nodata": 0,
+            },
+            {
+                "label": "CBERS-4 PAN10M Multispectral (10m)", "collection": "CB4-PAN10M-L4-DN-1",
+                "compositions": CBERS_PAN10M_COMPOSITIONS, "prefix": "CB4-PAN10M", "nodata": 0,
+            },
+            {
+                "label": "CBERS-4 PAN5M Panchromatic (5m)", "collection": "CB4-PAN5M-L4-DN-1",
+                "compositions": CBERS_PAN5M_COMPOSITIONS, "prefix": "CB4-PAN5M", "nodata": 0,
+            },
+        ],
+    },
+]
+
 # ── Generoso defaults ────────────────────────────────────────────────────────
 _DEFAULT_DAYS_BACK  = 180   # janela de busca padrão: 6 meses
 _DEFAULT_MAX_CLOUDS = 40    # nuvens: até 40 %
@@ -206,20 +312,27 @@ class VrtWorker(QThread):
     vrt_error     = pyqtSignal(str)
     load_progress = pyqtSignal(int)
 
-    def __init__(self, items, bands, collection, formula=None, parent=None):
+    def __init__(self, items, bands, collection, formula=None, needs_signing=True,
+                 prefix="", parent=None):
         super().__init__(parent)
-        self.items      = items if isinstance(items, list) else [items]
-        self.bands      = bands
-        self.collection = collection
-        self.formula    = formula
+        self.items         = items if isinstance(items, list) else [items]
+        self.bands         = bands
+        self.collection    = collection
+        self.formula       = formula
+        self.needs_signing = needs_signing
+        self.prefix        = prefix
 
     def run(self):
         try:
-            import planetary_computer
             import processing
             from osgeo import gdal
             import tempfile
             from pathlib import Path
+
+            sign_href = None
+            if self.needs_signing:
+                import planetary_computer
+                sign_href = planetary_computer.sign
 
             # Boost GDAL network resilience for /vsicurl/
             gdal.SetConfigOption("GDAL_HTTP_MAX_RETRY", "10")
@@ -234,8 +347,8 @@ class VrtWorker(QThread):
                     for band in self.bands:
                         asset = item.assets.get(band)
                         if asset:
-                            signed = planetary_computer.sign(asset.href)
-                            band_hrefs.append(f"/vsicurl/{signed}")
+                            href = sign_href(asset.href) if sign_href else asset.href
+                            band_hrefs.append(f"/vsicurl/{href}")
 
                     if not band_hrefs:
                         self.vrt_error.emit(f"Item {item.id}: No valid bands")
@@ -273,15 +386,22 @@ class VrtWorker(QThread):
                         test_ds = None
                         output_path = derived_vrt
                     else:
+                        # Only stack as distinct bands when we have more than one
+                        # single-band source; a lone asset (e.g. a pre-fused
+                        # multi-band TCI) must pass through with its native bands.
                         result = processing.run(
                             "gdal:buildvirtualraster",
-                            {"INPUT": band_hrefs, "SEPARATE": True, "OUTPUT": "TEMPORARY_OUTPUT"},
+                            {
+                                "INPUT": band_hrefs,
+                                "SEPARATE": len(band_hrefs) > 1,
+                                "OUTPUT": "TEMPORARY_OUTPUT",
+                            },
                         )
                         output_path = result["OUTPUT"]
 
                     clouds     = item.properties.get("eo:cloud_cover", 0)
-                    prefix     = "S2" if "sentinel" in self.collection else "LS"
-                    layer_name = f"{prefix}_{item.id} ({clouds:.1f}% clouds)"
+                    prefix     = f"{self.prefix}_" if self.prefix else ""
+                    layer_name = f"{prefix}{item.id} ({clouds:.1f}% clouds)"
                     if self.formula:
                         layer_name = f"{self.formula.upper()} - {layer_name}"
 
@@ -294,7 +414,7 @@ class VrtWorker(QThread):
             self.vrt_error.emit(str(e))
 
 
-class SentinelSTACDialog(QtWidgets.QDialog):
+class QuickVRTDialog(QtWidgets.QDialog):
 
     _STYLE = """
         QDialog {
@@ -425,7 +545,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("SentinelSTACDialogBase")
+        self.setObjectName("QuickVRTDialogBase")
         self.setWindowTitle(self.tr("Quick VRT Imagery Loader"))
         self.setMinimumSize(QSize(760, 560))
         self.setSizeGripEnabled(True)
@@ -433,8 +553,11 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.setStyleSheet(self._style_for_theme())
 
         # State
-        self._collection   = "sentinel-2-l2a"
-        self._compositions = SENTINEL2_COMPOSITIONS.copy()
+        self._provider      = STAC_PROVIDERS[0]
+        self._satellite     = STAC_PROVIDERS[0]["satellites"][0]
+        self._collection    = self._satellite["collection"]
+        self._compositions  = self._satellite["compositions"].copy()
+        self._active_thumbnail_asset = self._provider["thumbnail_asset"]
         self.last_items    = []
         self._thumb_worker  = None
         self._search_worker = None
@@ -442,7 +565,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self._mosaic_worker = None
         self._rubber_bands  = []
         self._current_thumbnail_pixmap = QPixmap()
-        
+
         # Debounce timer for thumbnails to avoid freezing during rapid clicking
         self._thumb_timer = QtCore.QTimer(self)
         self._thumb_timer.setSingleShot(True)
@@ -451,12 +574,13 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self._build_ui()
         self._retranslate()
         self._connect_signals()
-        self._update_satellite_params()
+        self._update_provider_params()
         self._load_extent()
         self._fit_to_available_screen()
 
 
     def tr(self, msg):
+        # Context kept as the pre-1.0 class name so existing pt/es .qm translations stay matched.
         return QCoreApplication.translate("SentinelSTACDialog", msg)
 
     @staticmethod
@@ -576,21 +700,24 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         g.setColumnStretch(3, 3)
         g.setColumnStretch(5, 2)
 
+        self.lbl_provider = QtWidgets.QLabel()
+        g.addWidget(self.lbl_provider, 0, 0)
+        self.comboBox_provider = QtWidgets.QComboBox()
+        self.comboBox_provider.addItems([p["name"] for p in STAC_PROVIDERS])
+        g.addWidget(self.comboBox_provider, 0, 1, 1, 5)
+
         self.lbl_sat = QtWidgets.QLabel()
-        g.addWidget(self.lbl_sat, 0, 0)
+        g.addWidget(self.lbl_sat, 1, 0)
         self.comboBox_satelite = QtWidgets.QComboBox()
-        self.comboBox_satelite.addItems(
-            ["Sentinel-2 L2A", "Landsat Collection 2 Level-2"]
-        )
-        g.addWidget(self.comboBox_satelite, 0, 1)
+        g.addWidget(self.comboBox_satelite, 1, 1)
 
         self.lbl_comp = QtWidgets.QLabel()
-        g.addWidget(self.lbl_comp, 0, 2)
+        g.addWidget(self.lbl_comp, 1, 2)
         self.comboBox_composicao = QtWidgets.QComboBox()
-        g.addWidget(self.comboBox_composicao, 0, 3, 1, 3)
+        g.addWidget(self.comboBox_composicao, 1, 3, 1, 3)
 
         self.lbl_period = QtWidgets.QLabel()
-        g.addWidget(self.lbl_period, 1, 0)
+        g.addWidget(self.lbl_period, 2, 0)
         date_lay = QtWidgets.QHBoxLayout()
         date_style = "font-size: 8pt;"
         # ── data inicial: _DEFAULT_DAYS_BACK dias atrás ──────────────────────
@@ -610,10 +737,10 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         date_lay.addWidget(self.lbl_to)
         date_lay.addWidget(self.dateEdit_final)
         date_lay.addStretch()
-        g.addLayout(date_lay, 1, 1)
+        g.addLayout(date_lay, 2, 1)
 
         self.lbl_max_clouds = QtWidgets.QLabel()
-        g.addWidget(self.lbl_max_clouds, 1, 2)
+        g.addWidget(self.lbl_max_clouds, 2, 2)
         cloud_lay = QtWidgets.QHBoxLayout()
         self.slider_clouds = QtWidgets.QSlider(_Horizontal)
         self.slider_clouds.setRange(0, 100)
@@ -625,10 +752,10 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.lbl_clouds_val.setStyleSheet(self._style_text("accent", "font-weight: bold;"))
         cloud_lay.addWidget(self.slider_clouds)
         cloud_lay.addWidget(self.lbl_clouds_val)
-        g.addLayout(cloud_lay, 1, 3)
+        g.addLayout(cloud_lay, 2, 3)
 
         self.lbl_bbox = QtWidgets.QLabel()
-        g.addWidget(self.lbl_bbox, 2, 0)
+        g.addWidget(self.lbl_bbox, 3, 0)
         bbox_lay = QtWidgets.QHBoxLayout()
         bbox_lay.setSpacing(2)
         self.sp_west  = self._make_coord_spin(-180, 180)
@@ -646,7 +773,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.btn_extent.setFixedHeight(28)
         bbox_lay.addWidget(self.btn_extent)
         bbox_lay.addStretch()
-        g.addLayout(bbox_lay, 2, 1, 1, 5)
+        g.addLayout(bbox_lay, 3, 1, 1, 5)
 
         return self.grp_params
 
@@ -873,6 +1000,9 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         return tab
 
     def _connect_signals(self):
+        self.comboBox_provider.currentIndexChanged.connect(
+            self._update_provider_params
+        )
         self.comboBox_satelite.currentIndexChanged.connect(
             self._update_satellite_params
         )
@@ -902,6 +1032,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             self.tr("Browse Satellite product collections, load imagery and build compositions and mosaics very quickly!")
         )
         self.grp_params.setTitle(self.tr("Search Parameters"))
+        self.lbl_provider.setText(self.tr("STAC Provider:"))
         self.lbl_sat.setText(self.tr("Satellite:"))
         self.lbl_comp.setText(self.tr("Composition:"))
         self.lbl_period.setText(self.tr("Period:"))
@@ -932,13 +1063,23 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         )
         self.btn_run_mosaic.setText(self.tr("Generate Mosaic"))
 
+    def _update_provider_params(self):
+        idx = self.comboBox_provider.currentIndex()
+        self._provider = STAC_PROVIDERS[idx if idx >= 0 else 0]
+        self.comboBox_satelite.blockSignals(True)
+        self.comboBox_satelite.clear()
+        self.comboBox_satelite.addItems(
+            [s["label"] for s in self._provider["satellites"]]
+        )
+        self.comboBox_satelite.blockSignals(False)
+        self._update_satellite_params()
+
     def _update_satellite_params(self):
-        if "Sentinel" in self.comboBox_satelite.currentText():
-            self._collection   = "sentinel-2-l2a"
-            self._compositions = SENTINEL2_COMPOSITIONS.copy()
-        else:
-            self._collection   = "landsat-c2-l2"
-            self._compositions = LANDSAT_COMPOSITIONS.copy()
+        idx = self.comboBox_satelite.currentIndex()
+        satellites = self._provider["satellites"]
+        self._satellite     = satellites[idx if idx >= 0 else 0]
+        self._collection    = self._satellite["collection"]
+        self._compositions  = self._satellite["compositions"].copy()
         self.comboBox_composicao.clear()
         self.comboBox_composicao.addItems(list(self._compositions.keys()))
 
@@ -973,7 +1114,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.btn_listar.setText(self.tr("Searching…"))
         self.btn_listar.setEnabled(False)
         self._search_worker = SearchWorker(
-            "https://planetarycomputer.microsoft.com/api/stac/v1",
+            self._provider["url"],
             self._collection, bbox,
             self.dateEdit_inicio.date().toString("yyyy-MM-dd"),
             self.dateEdit_final.date().toString("yyyy-MM-dd"),
@@ -988,6 +1129,9 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         self.btn_listar.setText(self.tr("🔍 Search available images"))
         self.btn_listar.setEnabled(True)
         self.last_items = items
+        # Freeze the provider's thumbnail asset key at search time so a later
+        # provider switch can't make it mismatch with these already-loaded items.
+        self._active_thumbnail_asset = self._provider["thumbnail_asset"]
         self._clear_rubber_bands()
         self.tableWidget.setRowCount(0)
         for idx, item in enumerate(items):
@@ -1034,7 +1178,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             return
             
         item = self.last_items[row]
-        asset = item.assets.get("rendered_preview")
+        asset = item.assets.get(self._active_thumbnail_asset)
         if not asset:
             self._current_thumbnail_pixmap = QPixmap()
             self.lbl_thumbnail.setText(self.tr("No preview available"))
@@ -1216,12 +1360,14 @@ class SentinelSTACDialog(QtWidgets.QDialog):
                 "start_date": self.dateEdit_inicio.date().toString("yyyy-MM-dd"),
                 "end_date":   self.dateEdit_final.date().toString("yyyy-MM-dd"),
                 "collection": self._collection,
+                "catalog_url":   self._provider["url"],
+                "needs_signing": self._provider["needs_signing"],
                 "bands": bands,
                 "formula": formula,
                 "max_cloud":  self.slider_clouds.value(),
                 "max_items":  1,
                 "preference": "N/A",
-                "nodata": 0,
+                "nodata": self._satellite.get("nodata", 0),
                 "export_tif":   True,
                 "out_tif_path": out_tif,
                 "compress":     self.cb_compress_browser.currentText(),
@@ -1232,7 +1378,11 @@ class SentinelSTACDialog(QtWidgets.QDialog):
         else:
             self.btn_carregar.setEnabled(False)
             # VrtWorker now handles a list of items
-            self._vrt_worker = VrtWorker(items, bands, self._collection, formula=formula, parent=self)
+            self._vrt_worker = VrtWorker(
+                items, bands, self._collection, formula=formula,
+                needs_signing=self._provider["needs_signing"],
+                prefix=self._satellite["prefix"], parent=self,
+            )
             self._vrt_worker.vrt_ready.connect(self._on_vrt_ready)
             self._vrt_worker.vrt_error.connect(self._on_vrt_error)
             self._vrt_worker.load_progress.connect(self.browser_progress.setValue)
@@ -1257,7 +1407,7 @@ class SentinelSTACDialog(QtWidgets.QDialog):
     @staticmethod
     def _apply_index_renderer(layer, formula):
         provider = layer.dataProvider()
-        ramp_items = SentinelSTACDialog._index_color_ramp(formula)
+        ramp_items = QuickVRTDialog._index_color_ramp(formula)
         color_ramp = QgsColorRampShader()
         try:
             color_ramp.setColorRampType(QgsColorRampShader.Type.Interpolated)
@@ -1349,12 +1499,14 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             "start_date": self.dateEdit_inicio.date().toString("yyyy-MM-dd"),
             "end_date":   self.dateEdit_final.date().toString("yyyy-MM-dd"),
             "collection": self._collection,
+            "catalog_url":   self._provider["url"],
+            "needs_signing": self._provider["needs_signing"],
             "bands":   bands,
             "formula": formula,
             "max_cloud":  self.slider_clouds.value(),
             "max_items":  len(items),
             "preference": "Manual",
-            "nodata": 0,
+            "nodata": self._satellite.get("nodata", 0),
             "export_tif":   export,
             "out_tif_path": out_tif,
             "compress":     self.cb_compress_browser.currentText(),
@@ -1386,12 +1538,14 @@ class SentinelSTACDialog(QtWidgets.QDialog):
             "start_date": self.dateEdit_inicio.date().toString("yyyy-MM-dd"),
             "end_date":   self.dateEdit_final.date().toString("yyyy-MM-dd"),
             "collection": self._collection,
+            "catalog_url":   self._provider["url"],
+            "needs_signing": self._provider["needs_signing"],
             "bands":   bands,
             "formula": formula,
             "max_cloud":  self.slider_clouds.value(),
             "max_items":  self.sp_items.value(),
             "preference": self.cb_preference.currentText(),
-            "nodata": 0,
+            "nodata": self._satellite.get("nodata", 0),
             "export_tif":   export,
             "out_tif_path": out_tif,
             "compress":     self.cb_compress.currentText(),

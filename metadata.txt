@@ -2,15 +2,15 @@
 name=Quick VRT Imagery Loader
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
-description=Loads satellite images from Microsoft Planetary Computer STAC API quickly
-version=0.7.3
+description=Loads satellite imagery from multiple STAC APIs (Microsoft Planetary Computer, INPE Brazil Data Cube) quickly as VRT
+version=1.0.0
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
-about=Plugin for searching and loading satellite imagery via the Microsoft Planetary Computer STAC API. It lists pre-configured compositions and loads images as VRT. Supports Sentinel-2 and Landsat collections with multiple band compositions (True Color, False Color NIR/SWIR, Agriculture, Geology, Urban, Bathymetric, and more). Compatible with QGIS 3.x (Qt5) and QGIS 4.x (Qt6).
+about=Plugin for searching and loading satellite imagery via multiple STAC APIs: Microsoft Planetary Computer and INPE's Brazil Data Cube. It lists pre-configured compositions and loads images as VRT. Supports Sentinel-2, Landsat Collection 2, and CBERS-4/4A collections (MUX, WFI, WPM multispectral+panchromatic, WPM pansharpened true color, PAN10M, PAN5M) with multiple band compositions (True Color, False Color NIR/SWIR, Agriculture, Geology, Urban, Bathymetric, Panchromatic, and more). Compatible with QGIS 3.x (Qt5) and QGIS 4.x (Qt6).
 
-tracker=https://github.com/vagnertxr/sentinel_stac_loader/issues
-repository=https://github.com/vagnertxr/sentinel_stac_loader
+tracker=https://github.com/vagnertxr/quickvrt/issues
+repository=https://github.com/vagnertxr/quickvrt
 # End of mandatory metadata
 
 # Recommended items:
@@ -18,6 +18,7 @@ repository=https://github.com/vagnertxr/sentinel_stac_loader
 hasProcessingProvider=no
 
 changelog=
+    1.0.0 - Renamed project to quickvrt. Added multi-provider STAC support with a provider selector (Microsoft Planetary Computer, INPE Brazil Data Cube). Added CBERS-4/4A support: MUX, WFI, WPM multispectral+panchromatic, WPM pansharpened true color (TCI), PAN10M and PAN5M panchromatic, each with dedicated band compositions and spectral indices.
     0.7.3 - Fixed index compositions, fixed light theme support
     0.7.2 - Fixed translation loading, Windows tab text sizing, and QGIS 3 footprint drawing
     0.7.1 - Security scan fix for HTTPS thumbnail preview downloads
@@ -27,9 +28,9 @@ changelog=
     0.4 - Initial public release
 
 # Tags are comma separated with spaces allowed
-tags=python, raster, satellite, sentinel, landsat, stac, vrt, remote sensing, planetary computer, imagery
+tags=python, raster, satellite, sentinel, landsat, cbers, inpe, stac, vrt, remote sensing, planetary computer, brazil data cube, imagery
 
-homepage=https://github.com/vagnertxr/sentinel_stac_loader
+homepage=https://github.com/vagnertxr/quickvrt
 category=Raster
 icon=icon.png
 # experimental flag
