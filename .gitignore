@@ -5,3 +5,4 @@ dist/
 build_qgis_plugin_zip.py
 .agents
 .codex
+.claude

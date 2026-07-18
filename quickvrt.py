@@ -158,10 +158,12 @@ class QuickVRT:
         from .quickvrt_dialog import QuickVRTDialog
 
         if self.dlg is None:
-            self.dlg = QuickVRTDialog()
+            # Parented to the main window so it stays on top of QGIS, but
+            # shown non-modally: the map canvas stays interactive, so users
+            # can pan/zoom and then hit "Get from map canvas" live.
+            self.dlg = QuickVRTDialog(self.iface.mainWindow())
 
         self.dlg.prepare_for_open()
         self.dlg.show()
-        # exec_() was renamed to exec() in Qt6/PyQt6.
-        # QDialog.exec() exists in both Qt5 and Qt6, so use it unconditionally.
-        self.dlg.exec()
+        self.dlg.raise_()
+        self.dlg.activateWindow()

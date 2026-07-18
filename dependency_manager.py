@@ -150,6 +150,27 @@ class DependencyManager:
 
         return success
 
+    def _pip_install(self, pkg, startupinfo):
+        """Install a single package with --user, falling back to
+        --break-system-packages on PEP 668 "externally managed environment"
+        distros (Debian 12+/Ubuntu 23.04+ and newer) where a plain pip
+        install is refused outright. --user still confines the install to
+        the user's own site-packages, so this stays as safe as the normal path."""
+        args = [self._python_exe, "-m", "pip", "install", "--user", pkg]
+        try:
+            subprocess.run(
+                args, startupinfo=startupinfo, capture_output=True,
+                check=True, text=True,
+            )
+        except subprocess.CalledProcessError as e:
+            if "externally-managed-environment" not in (e.stderr or ""):
+                raise
+            subprocess.run(
+                args + ["--break-system-packages"],
+                startupinfo=startupinfo, capture_output=True,
+                check=True, text=True,
+            )
+
     def _install_packages(self, packages):
         startupinfo = None
         if os.name == 'nt':
@@ -174,13 +195,7 @@ class DependencyManager:
             QApplication.processEvents()
 
             try:
-                subprocess.run(
-                    [self._python_exe, "-m", "pip", "install", "--user", pkg],
-                    startupinfo=startupinfo,
-                    capture_output=True,
-                    check=True,
-                    text=True
-                )
+                self._pip_install(pkg, startupinfo)
             except subprocess.CalledProcessError as e:
                 progress.close()
                 err = e.stderr or str(e)

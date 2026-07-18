@@ -132,15 +132,15 @@
     </message>
     <message>
         <location filename="../quickvrt_dialog.py" line="775" />
-        <source>🗺️ Get from map canvas</source>
-        <translation>🗺️ Obtener de la vista de mapa</translation>
+        <source>Get from map canvas</source>
+        <translation>Obtener de la vista de mapa</translation>
     </message>
     <message>
         <location filename="../quickvrt_dialog.py" line="871" />
         <location filename="../quickvrt_dialog.py" line="852" />
         <location filename="../quickvrt_dialog.py" line="776" />
-        <source>🔍 Search available images</source>
-        <translation>🔍 Buscar imágenes disponibles</translation>
+        <source>Search available images</source>
+        <translation>Buscar imágenes disponibles</translation>
     </message>
     <message>
         <location filename="../quickvrt_dialog.py" line="778" />
@@ -162,11 +162,6 @@
         <location filename="../quickvrt_dialog.py" line="781" />
         <source>Mosaic Selected</source>
         <translation>Mosaico de Seleccionadas</translation>
-    </message>
-    <message>
-        <location filename="../quickvrt_dialog.py" line="782" />
-        <source>📋 Copy ID</source>
-        <translation>📋 Copiar ID</translation>
     </message>
     <message>
         <location filename="../quickvrt_dialog.py" line="783" />
@@ -293,5 +288,64 @@
         <location filename="../quickvrt_dialog.py" line="1188" />
         <source>Save GeoTIFF</source>
         <translation>Guardar GeoTIFF</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="1252" />
+        <source>Preview error: {}</source>
+        <translation>Error de vista previa: {}</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="1641" />
+        <source>
+ERROR:
+{}</source>
+        <translation>
+ERROR:
+{}</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="745" />
+        <source>Credits</source>
+        <translation>Créditos</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="787" />
+        <source>Version {}</source>
+        <translation>Versión {}</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="792" />
+        <source>Created by Vagner Teixeira</source>
+        <translation>Creado por Vagner Teixeira</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="811" />
+        <source>Close</source>
+        <translation>Cerrar</translation>
+    </message>
+    <message>
+        <location filename="../mosaic_worker.py" line="35" />
+        <source>Search request failed, retrying ({}/{})...</source>
+        <translation>Error en la solicitud de búsqueda, reintentando ({}/{})...</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="1380" />
+        <source>Cancel search</source>
+        <translation>Cancelar búsqueda</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="1860" />
+        <source>Cancel mosaic</source>
+        <translation>Cancelar mosaico</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="1880" />
+        <source>Cancelled by user.</source>
+        <translation>Cancelado por el usuario.</translation>
+    </message>
+    <message>
+        <location filename="../quickvrt_dialog.py" line="1108" />
+        <source>Load more results</source>
+        <translation>Cargar más resultados</translation>
     </message>
 </context></TS>

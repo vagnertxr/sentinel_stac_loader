@@ -7,13 +7,13 @@ import os
 from datetime import date, timedelta
 
 from qgis.PyQt import QtWidgets, QtCore
-from qgis.PyQt.QtCore import Qt, QCoreApplication, QSize, pyqtSignal, QThread
+from qgis.PyQt.QtCore import Qt, QCoreApplication, QSize, QSettings, pyqtSignal, QThread
 from qgis.PyQt.QtGui import QPixmap, QFont, QColor, QIcon, QPalette
 from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
     QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsRectangle, QgsJsonUtils, QgsWkbTypes,
+    QgsRectangle, QgsWkbTypes,
     QgsColorRampShader, QgsRasterShader, QgsSingleBandPseudoColorRenderer
 )
 from qgis.gui import QgsRubberBand
@@ -39,6 +39,7 @@ def _flag(cls, name):
 if _QT6:
     _AlignCenter   = Qt.AlignmentFlag.AlignCenter
     _AlignRight    = Qt.AlignmentFlag.AlignRight
+    _AlignTop      = Qt.AlignmentFlag.AlignTop
     _Horizontal    = Qt.Orientation.Horizontal
     _Vertical      = Qt.Orientation.Vertical
     _NoEditTrig    = QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
@@ -52,10 +53,13 @@ if _QT6:
     _KeepAspect    = Qt.AspectRatioMode.KeepAspectRatio
     _SmoothTx      = Qt.TransformationMode.SmoothTransformation
     _WrapWord      = Qt.TextInteractionFlag.TextSelectableByMouse
+    _TextBrowserInteraction = Qt.TextInteractionFlag.TextBrowserInteraction
+    _PointingHand  = Qt.CursorShape.PointingHandCursor
     _ResizeEvent   = QtCore.QEvent.Type.Resize
 else:
-    _AlignCenter   = Qt.AlignCenter      
-    _AlignRight    = Qt.AlignRight      
+    _AlignCenter   = Qt.AlignCenter
+    _AlignRight    = Qt.AlignRight
+    _AlignTop      = Qt.AlignTop
     _Horizontal    = Qt.Horizontal        
     _Vertical      = Qt.Vertical            
     _NoEditTrig    = QtWidgets.QAbstractItemView.NoEditTriggers
@@ -68,7 +72,9 @@ else:
     _WindowModal   = Qt.WindowModal        
     _KeepAspect    = Qt.KeepAspectRatio     
     _SmoothTx      = Qt.SmoothTransformation  
-    _WrapWord      = Qt.TextSelectableByMouse  
+    _WrapWord      = Qt.TextSelectableByMouse
+    _TextBrowserInteraction = Qt.TextBrowserInteraction
+    _PointingHand  = Qt.PointingHandCursor
     _ResizeEvent   = QtCore.QEvent.Resize
 
 try:
@@ -169,6 +175,31 @@ CBERS_PAN5M_COMPOSITIONS = {
     "Panchromatic (B1) 5m": ["BAND1"],
 }
 
+# Earth Search (Element84 / AWS) serves Sentinel-2 with common-name asset
+# keys (red/green/blue/nir/...) over public HTTPS. Its Landsat collection is
+# NOT included: those assets live in the requester-pays usgs-landsat S3
+# bucket and fail without AWS credentials.
+EARTHSEARCH_S2_COMPOSITIONS = {
+    "True Color (red, green, blue)":           ["red", "green", "blue"],
+    "False Color NIR (nir, red, green)":       ["nir", "red", "green"],
+    "False Color SWIR (swir22, nir, red)":     ["swir22", "nir", "red"],
+    "Agriculture (swir16, nir, blue)":         ["swir16", "nir", "blue"],
+    "Healthy Vegetation (nir08, swir16, blue)": ["nir08", "swir16", "blue"],
+    "Red Edge / Stress (nir, nir08, red)":     ["nir", "nir08", "red"],
+    "Vegetation / Biomass (nir, swir16, red)": ["nir", "swir16", "red"],
+    "Geology (swir22, swir16, blue)":          ["swir22", "swir16", "blue"],
+    "Urban / Soil (swir22, swir16, red)":      ["swir22", "swir16", "red"],
+    "Bathymetric (red, green, coastal)":       ["red", "green", "coastal"],
+    "Water Bodies (green, nir, swir16)":       ["green", "nir", "swir16"],
+    "Burn Area (swir22, nir08, red)":          ["swir22", "nir08", "red"],
+    "Atmospheric Penetration (swir22, swir16, nir08)": ["swir22", "swir16", "nir08"],
+    "Snow / Ice (red, green, nir)":            ["red", "green", "nir"],
+    "NDVI (Normalized Difference Vegetation)": {"bands": ["nir", "red"], "formula": "ndvi"},
+    "EVI (Enhanced Vegetation Index)":         {"bands": ["nir", "red", "blue"], "formula": "evi"},
+    "NDWI (Normalized Difference Water)":      {"bands": ["green", "nir"], "formula": "ndwi"},
+    "NDMI (Normalized Difference Moisture)":   {"bands": ["nir", "swir16"], "formula": "ndmi"},
+}
+
 # STAC providers available to the user. Each satellite entry carries
 # everything downstream code needs to stay provider-agnostic: which
 # collection to query, how to build compositions, whether assets need
@@ -188,6 +219,18 @@ STAC_PROVIDERS = [
             {
                 "label": "Landsat Collection 2 Level-2", "collection": "landsat-c2-l2",
                 "compositions": LANDSAT_COMPOSITIONS, "prefix": "LS", "nodata": 0,
+            },
+        ],
+    },
+    {
+        "name": "Element84 Earth Search (AWS)",
+        "url": "https://earth-search.aws.element84.com/v1",
+        "needs_signing": False,
+        "thumbnail_asset": "thumbnail",
+        "satellites": [
+            {
+                "label": "Sentinel-2 L2A", "collection": "sentinel-2-l2a",
+                "compositions": EARTHSEARCH_S2_COMPOSITIONS, "prefix": "S2", "nodata": 0,
             },
         ],
     },
@@ -237,6 +280,7 @@ STAC_PROVIDERS = [
 _DEFAULT_DAYS_BACK  = 180   # janela de busca padrão: 6 meses
 _DEFAULT_MAX_CLOUDS = 40    # nuvens: até 40 %
 _DEFAULT_MAX_SCENES = 50    # limite de cenas no Auto-Mosaic
+_SEARCH_PAGE_SIZE   = 200   # Browser: cenas por página de busca ("load more")
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -254,6 +298,26 @@ def _passes_cloud_filter(properties, max_clouds):
 def _format_clouds(properties):
     cc = _cloud_cover(properties)
     return "N/A" if cc is None else f"{cc:.1f}%"
+
+
+def _summarize_error(text):
+    """STAC/HTTP failures (e.g. a CDN's 502/504 gateway page) sometimes
+    surface as a full HTML error page in the exception text. Collapse that
+    into a short, readable summary instead of dumping raw markup in the UI."""
+    stripped = text.strip()
+    lower = stripped.lower()
+    if not (lower.startswith("<!doctype") or lower.startswith("<html") or "<html" in lower[:200]):
+        return text
+    import re
+    status_match = re.search(r"<h1>\s*(\d{3})\s*</h1>", text, re.IGNORECASE)
+    title_match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
+    status = status_match.group(1) if status_match else None
+    title = title_match.group(1).strip() if title_match else None
+    if status and title:
+        return f"Server error {status}: {title}. The remote service may be temporarily unavailable - please try again shortly."
+    if title:
+        return f"Server error: {title}. The remote service may be temporarily unavailable - please try again shortly."
+    return "The remote server returned an error page. It may be temporarily unavailable - please try again shortly."
 
 class ThumbnailWorker(QThread):
     thumbnail_ready = pyqtSignal(QPixmap)
@@ -288,11 +352,11 @@ class ThumbnailWorker(QThread):
 
 
 class SearchWorker(QThread):
-    search_done  = pyqtSignal(list)
+    search_done  = pyqtSignal(list, bool)
     search_error = pyqtSignal(str)
 
     def __init__(self, catalog_url, collection, bbox,
-                 start_date, end_date, max_clouds, parent=None):
+                 start_date, end_date, max_clouds, max_results=200, parent=None):
         super().__init__(parent)
         self.catalog_url = catalog_url
         self.collection  = collection
@@ -300,33 +364,60 @@ class SearchWorker(QThread):
         self.start_date  = start_date
         self.end_date    = end_date
         self.max_clouds  = max_clouds
+        self.max_results = max_results
 
     def run(self):
-        try:
-            import pystac_client
-            catalog = pystac_client.Client.open(self.catalog_url)
-            search  = catalog.search(
-                collections=[self.collection],
-                bbox=self.bbox,
-                datetime=f"{self.start_date}/{self.end_date}",
-            )
-            items = list(search.get_all_items())
-            # Unknown cloud cover sorts last but is never filtered out - some
-            # collections (CBERS DN products) simply don't compute it.
-            items = sorted(
-                items,
-                key=lambda x: (
-                    _cloud_cover(x.properties)
-                    if _cloud_cover(x.properties) is not None else 101
-                ),
-            )
-            items = [
-                i for i in items
-                if _passes_cloud_filter(i.properties, self.max_clouds)
-            ]
-            self.search_done.emit(items)
-        except Exception as e:
-            self.search_error.emit(str(e))
+        import pystac_client
+
+        attempts = 3
+        last_err = None
+        for attempt in range(attempts):
+            if self.isInterruptionRequested():
+                return
+            try:
+                # Fail fast rather than waiting out a CDN's own ~30s gateway
+                # timeout on every attempt - our retry loop handles the rest.
+                catalog = pystac_client.Client.open(self.catalog_url, timeout=(10, 20))
+                search  = catalog.search(
+                    collections=[self.collection],
+                    bbox=self.bbox,
+                    datetime=f"{self.start_date}/{self.end_date}",
+                    max_items=self.max_results,
+                )
+                items = list(search.items())
+                if self.isInterruptionRequested():
+                    return
+                # A wide bbox over a long period can match thousands of
+                # scenes; the fetch is capped, and the caller offers "load
+                # more" when the server reports additional matches.
+                try:
+                    matched = search.matched()
+                except Exception:
+                    matched = None
+                has_more = bool(matched and matched > len(items))
+                # Unknown cloud cover sorts last but is never filtered out - some
+                # collections (CBERS DN products) simply don't compute it.
+                items = sorted(
+                    items,
+                    key=lambda x: (
+                        _cloud_cover(x.properties)
+                        if _cloud_cover(x.properties) is not None else 101
+                    ),
+                )
+                items = [
+                    i for i in items
+                    if _passes_cloud_filter(i.properties, self.max_clouds)
+                ]
+                self.search_done.emit(items, has_more)
+                return
+            except Exception as e:
+                last_err = e
+                # Transient outages (e.g. Azure Front Door 504s on Planetary
+                # Computer) are common; retry a couple times before giving up.
+                if attempt < attempts - 1:
+                    self.msleep(4000)
+        if not self.isInterruptionRequested():
+            self.search_error.emit(_summarize_error(str(last_err)))
 
 
 class VrtWorker(QThread):
@@ -360,7 +451,14 @@ class VrtWorker(QThread):
             gdal.SetConfigOption("GDAL_HTTP_MAX_RETRY", "10")
             gdal.SetConfigOption("GDAL_HTTP_RETRY_DELAY", "1")
             gdal.SetConfigOption("VSI_CACHE", "TRUE")
-            gdal.SetConfigOption("GDAL_HTTP_TIMEOUT", "30")
+            gdal.SetConfigOption("GDAL_HTTP_TIMEOUT", "60")
+            gdal.SetConfigOption("GDAL_HTTP_MERGE_CONSECUTIVE_HTTP_RETRIEVALS", "YES")
+            # Some CBERS assets (e.g. WPM panchromatic, ~2GB, one strip per
+            # pixel row, no overviews) are extremely inefficient to stream at
+            # GDAL's tiny 16KB default chunk size - thousands of round trips.
+            # A larger chunk/cache lets GDAL coalesce many strip reads into few requests.
+            gdal.SetConfigOption("CPL_VSIL_CURL_CHUNK_SIZE", "1048576")
+            gdal.SetConfigOption("VSI_CACHE_SIZE", "67108864")
 
             total = len(self.items)
             for i, item in enumerate(self.items):
@@ -437,133 +535,6 @@ class VrtWorker(QThread):
 
 class QuickVRTDialog(QtWidgets.QDialog):
 
-    _STYLE = """
-        QDialog {
-            background-color: #1e1e2e;
-            color: #cdd6f4;
-        }
-        QGroupBox {
-            border: 1px solid #45475a;
-            border-radius: 6px;
-            margin-top: 8px;
-            padding-top: 6px;
-            color: #cdd6f4;
-            font-weight: bold;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 4px;
-            color: #89b4fa;
-        }
-        QLabel { color: #cdd6f4; }
-        QComboBox, QSpinBox, QDoubleSpinBox, QDateEdit, QLineEdit {
-            background-color: #313244;
-            border: 1px solid #45475a;
-            border-radius: 4px;
-            padding: 3px 6px;
-            color: #cdd6f4;
-            selection-background-color: #89b4fa;
-        }
-        QComboBox::drop-down { border: none; }
-        QSlider::groove:horizontal {
-            height: 4px;
-            background: #45475a;
-            border-radius: 2px;
-        }
-        QSlider::handle:horizontal {
-            background: #89b4fa;
-            width: 14px; height: 14px;
-            margin: -5px 0;
-            border-radius: 7px;
-        }
-        QSlider::sub-page:horizontal { background: #89b4fa; border-radius: 2px; }
-        QTableWidget {
-            background-color: #181825;
-            alternate-background-color: #1e1e2e;
-            gridline-color: #45475a;
-            border: 1px solid #45475a;
-            border-radius: 4px;
-            color: #cdd6f4;
-        }
-        QHeaderView::section {
-            background-color: #313244;
-            color: #89b4fa;
-            font-weight: bold;
-            border: none;
-            padding: 4px;
-        }
-        QTableWidget::item:selected {
-            background-color: #89b4fa;
-            color: #1e1e2e;
-        }
-        QTabWidget::pane {
-            border: 1px solid #45475a;
-            border-radius: 6px;
-            background-color: #1e1e2e;
-        }
-        QTabBar::tab {
-            background: #313244;
-            color: #cdd6f4;
-            font-size: 9pt;
-            padding: 5px 14px;
-            min-width: 86px;
-            border-radius: 4px 4px 0 0;
-            margin-right: 2px;
-        }
-        QTabBar::tab:selected { background: #89b4fa; color: #1e1e2e; font-weight: bold; }
-        QTabBar::tab:hover    { background: #45475a; }
-        QPushButton {
-            background-color: #313244;
-            color: #cdd6f4;
-            border: 1px solid #45475a;
-            border-radius: 5px;
-            padding: 5px 12px;
-        }
-        QPushButton:hover    { background-color: #45475a; }
-        QPushButton:pressed  { background-color: #585b70; }
-        QPushButton:disabled { color: #585b70; border-color: #313244; }
-        QPushButton#btn_primary {
-            background-color: #89b4fa;
-            color: #1e1e2e;
-            font-weight: bold;
-            border: none;
-        }
-        QPushButton#btn_primary:hover   { background-color: #b4d0fb; }
-        QPushButton#btn_primary:pressed { background-color: #74a8f9; }
-        QPushButton#btn_danger {
-            background-color: #f38ba8;
-            color: #1e1e2e;
-            font-weight: bold;
-            border: none;
-        }
-        QTextEdit {
-            background-color: #11111b;
-            color: #a6e3a1;
-            font-family: monospace;
-            font-size: 9pt;
-            border: 1px solid #45475a;
-            border-radius: 4px;
-        }
-        QProgressBar {
-            border: 1px solid #45475a;
-            border-radius: 4px;
-            background-color: #181825;
-            height: 10px;
-            text-align: center;
-            color: transparent;
-        }
-        QProgressBar::chunk { background-color: #89b4fa; border-radius: 3px; }
-        QCheckBox { color: #cdd6f4; spacing: 6px; }
-        QCheckBox::indicator { width: 14px; height: 14px; }
-        QFrame#preview_frame {
-            background-color: #181825;
-            border: 1px solid #45475a;
-            border-radius: 6px;
-        }
-        QSplitter::handle { background-color: #45475a; }
-    """
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("QuickVRTDialogBase")
@@ -571,7 +542,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self.setMinimumSize(QSize(760, 560))
         self.setSizeGripEnabled(True)
         self._theme = self._theme_colors()
-        self.setStyleSheet(self._style_for_theme())
+        self.setStyleSheet(self._build_stylesheet())
 
         # State
         self._provider      = STAC_PROVIDERS[0]
@@ -585,6 +556,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self._vrt_worker    = None
         self._mosaic_worker = None
         self._rubber_bands  = []
+        self._search_cap    = _SEARCH_PAGE_SIZE
         self._current_thumbnail_pixmap = QPixmap()
 
         # Debounce timer for thumbnails to avoid freezing during rapid clicking
@@ -596,6 +568,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self._retranslate()
         self._connect_signals()
         self._update_provider_params()
+        self._restore_settings()
         self._load_extent()
         self._fit_to_available_screen()
 
@@ -606,53 +579,195 @@ class QuickVRTDialog(QtWidgets.QDialog):
 
     @staticmethod
     def _theme_colors():
+        """Semantic color tokens for the dark/light stylesheet. Dark stays
+        close to Catppuccin Mocha; light is a proper Catppuccin Latte-style
+        palette rather than a naive hex swap, so both feel intentionally
+        designed instead of one being a patched version of the other."""
         palette = QtWidgets.QApplication.palette()
         window_role = QPalette.ColorRole.Window if _QT6 else QPalette.Window
         is_dark = palette.color(window_role).lightness() < 128
         if is_dark:
             return {
-                "fg": "#cdd6f4",
-                "muted": "#6c7086",
-                "accent": "#89b4fa",
-                "accent_hover": "#b4d0fb",
+                "bg":             "#1e1e2e",
+                "bg_alt":         "#181825",
+                "bg_input":       "#313244",
+                "bg_deepest":     "#11111b",
+                "fg":             "#cdd6f4",
+                "muted":          "#a6adc8",
+                "border":         "rgba(255, 255, 255, 0.09)",
+                "border_strong":  "rgba(255, 255, 255, 0.16)",
+                "accent":         "#89b4fa",
+                "accent_hover":   "#a5c8fb",
                 "accent_pressed": "#74a8f9",
-                "accent_text": "#1e1e2e",
-                "danger": "#f38ba8",
-                "success": "#a6e3a1",
+                "accent_text":    "#1e1e2e",
+                "danger":         "#f38ba8",
+                "danger_text":    "#1e1e2e",
+                "log_text":       "#a6e3a1",
             }
         return {
-            "fg": "#1f2937",
-            "muted": "#596579",
-            "accent": "#1d5fbf",
-            "accent_hover": "#2b6fd3",
-            "accent_pressed": "#154f9f",
-            "accent_text": "#ffffff",
-            "danger": "#b42318",
-            "success": "#116329",
+            "bg":             "#eff1f5",
+            "bg_alt":         "#ffffff",
+            "bg_input":       "#ffffff",
+            "bg_deepest":     "#11111b",
+            "fg":             "#4c4f69",
+            "muted":          "#6c6f85",
+            "border":         "rgba(76, 79, 105, 0.14)",
+            "border_strong":  "rgba(76, 79, 105, 0.22)",
+            "accent":         "#1e66f5",
+            "accent_hover":   "#3c7bf6",
+            "accent_pressed": "#1552c9",
+            "accent_text":    "#ffffff",
+            "danger":         "#d20f39",
+            "danger_text":    "#ffffff",
+            "log_text":       "#a6e3a1",
         }
 
-    def _style_for_theme(self):
-        if self._theme["accent_text"] != "#ffffff":
-            return self._STYLE
-        replacements = {
-            "#1e1e2e": "#f6f7f9",
-            "#cdd6f4": self._theme["fg"],
-            "#45475a": "#c9d1dc",
-            "#89b4fa": self._theme["accent"],
-            "#313244": "#ffffff",
-            "#181825": "#ffffff",
-            "#11111b": "#f3f5f7",
-            "#6c7086": self._theme["muted"],
-            "#585b70": "#8a94a6",
-            "#b4d0fb": self._theme["accent_hover"],
-            "#74a8f9": self._theme["accent_pressed"],
-            "#f38ba8": self._theme["danger"],
-            "#a6e3a1": self._theme["success"],
-        }
-        style = self._STYLE
-        for old, new in replacements.items():
-            style = style.replace(old, new)
-        return style
+    def _build_stylesheet(self):
+        t = self._theme
+        return f"""
+            QDialog {{
+                background-color: {t['bg']};
+                color: {t['fg']};
+            }}
+            QGroupBox {{
+                border: 1px solid {t['border_strong']};
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+                color: {t['fg']};
+                font-weight: 600;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 4px;
+                color: {t['muted']};
+            }}
+            QLabel {{ color: {t['fg']}; }}
+            QComboBox, QSpinBox, QDoubleSpinBox, QDateEdit, QLineEdit {{
+                background-color: {t['bg_input']};
+                border: 1px solid {t['border']};
+                border-radius: 6px;
+                padding: 4px 8px;
+                color: {t['fg']};
+                selection-background-color: {t['accent']};
+                selection-color: {t['accent_text']};
+            }}
+            QComboBox::drop-down {{ border: none; width: 20px; }}
+            QComboBox QAbstractItemView {{
+                background-color: {t['bg_input']};
+                border: 1px solid {t['border_strong']};
+                selection-background-color: {t['accent']};
+                selection-color: {t['accent_text']};
+                outline: none;
+            }}
+            QSlider::groove:horizontal {{
+                height: 4px;
+                background: {t['border_strong']};
+                border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {t['accent']};
+                width: 14px; height: 14px;
+                margin: -5px 0;
+                border-radius: 7px;
+            }}
+            QSlider::sub-page:horizontal {{ background: {t['accent']}; border-radius: 2px; }}
+            QTableWidget {{
+                background-color: {t['bg_alt']};
+                alternate-background-color: {t['bg']};
+                gridline-color: transparent;
+                border: 1px solid {t['border_strong']};
+                border-radius: 8px;
+                color: {t['fg']};
+            }}
+            QHeaderView::section {{
+                background-color: transparent;
+                color: {t['muted']};
+                font-weight: 600;
+                border: none;
+                border-bottom: 1px solid {t['border_strong']};
+                padding: 6px 4px;
+            }}
+            QTableWidget::item {{ padding: 2px 4px; }}
+            QTableWidget::item:selected {{
+                background-color: {t['accent']};
+                color: {t['accent_text']};
+            }}
+            QTabWidget::pane {{
+                border: 1px solid {t['border_strong']};
+                border-radius: 8px;
+                background-color: {t['bg']};
+                top: -1px;
+            }}
+            QTabBar::tab {{
+                background: transparent;
+                color: {t['muted']};
+                font-size: 9pt;
+                padding: 7px 16px;
+                min-width: 86px;
+                border-radius: 6px;
+                margin-right: 2px;
+            }}
+            QTabBar::tab:selected {{ background: {t['bg_input']}; color: {t['fg']}; font-weight: 600; }}
+            QTabBar::tab:hover:!selected {{ color: {t['fg']}; }}
+            QPushButton {{
+                background-color: {t['bg_input']};
+                color: {t['fg']};
+                border: 1px solid {t['border']};
+                border-radius: 6px;
+                padding: 6px 14px;
+            }}
+            QPushButton:hover    {{ border-color: {t['border_strong']}; }}
+            QPushButton:pressed  {{ background-color: {t['border_strong']}; }}
+            QPushButton:disabled {{ color: {t['muted']}; border-color: {t['border']}; }}
+            QPushButton#btn_primary {{
+                background-color: {t['accent']};
+                color: {t['accent_text']};
+                font-weight: 600;
+                border: none;
+            }}
+            QPushButton#btn_primary:hover   {{ background-color: {t['accent_hover']}; }}
+            QPushButton#btn_primary:pressed {{ background-color: {t['accent_pressed']}; }}
+            QPushButton#btn_danger {{
+                background-color: {t['danger']};
+                color: {t['danger_text']};
+                font-weight: 600;
+                border: none;
+            }}
+            QPushButton#btn_link {{
+                background: transparent;
+                border: none;
+                color: {t['muted']};
+                padding: 2px 6px;
+            }}
+            QPushButton#btn_link:hover {{ color: {t['accent']}; }}
+            QTextEdit {{
+                background-color: {t['bg_deepest']};
+                color: {t['log_text']};
+                font-family: monospace;
+                font-size: 9pt;
+                border: 1px solid {t['border_strong']};
+                border-radius: 8px;
+            }}
+            QProgressBar {{
+                border: 1px solid {t['border']};
+                border-radius: 4px;
+                background-color: {t['bg_alt']};
+                height: 10px;
+                text-align: center;
+                color: transparent;
+            }}
+            QProgressBar::chunk {{ background-color: {t['accent']}; border-radius: 3px; }}
+            QCheckBox {{ color: {t['fg']}; spacing: 8px; }}
+            QCheckBox::indicator {{ width: 15px; height: 15px; border-radius: 3px; }}
+            QFrame#preview_frame {{
+                background-color: {t['bg_alt']};
+                border: 1px solid {t['border_strong']};
+                border-radius: 8px;
+            }}
+            QSplitter::handle {{ background-color: transparent; }}
+        """
 
     def _style_text(self, color_key="fg", extra=""):
         color = self._theme[color_key]
@@ -660,6 +775,47 @@ class QuickVRTDialog(QtWidgets.QDialog):
 
     def prepare_for_open(self):
         self._load_extent()
+
+    _SETTINGS_PREFIX = "quickvrt/"
+
+    def _save_settings(self):
+        s = QSettings()
+        p = self._SETTINGS_PREFIX
+        # Provider is intentionally NOT persisted: the plugin always opens on
+        # Microsoft Planetary Computer (the original default the userbase
+        # expects). Satellite/composition are also left out since they only
+        # make sense within a provider.
+        s.setValue(p + "max_clouds",       self.slider_clouds.value())
+        s.setValue(p + "scene_limit",      self.sp_items.value())
+        s.setValue(p + "preference",       self.cb_preference.currentIndex())
+        s.setValue(p + "compress_browser", self.cb_compress_browser.currentText())
+        s.setValue(p + "compress_mosaic",  self.cb_compress.currentText())
+        s.setValue(p + "tif_browser",      self.le_tif_browser.text())
+        s.setValue(p + "tif_mosaic",       self.le_tif.text())
+
+    def _restore_settings(self):
+        s = QSettings()
+        p = self._SETTINGS_PREFIX
+
+        def restore_combo(combo, key):
+            text = s.value(p + key, "", type=str)
+            if text:
+                idx = combo.findText(text)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+
+        # Provider/satellite/composition are deliberately not restored: the
+        # plugin always opens on Microsoft Planetary Computer with its default
+        # collection, matching the behaviour the userbase is used to.
+        self.slider_clouds.setValue(s.value(p + "max_clouds", _DEFAULT_MAX_CLOUDS, type=int))
+        self.sp_items.setValue(s.value(p + "scene_limit", _DEFAULT_MAX_SCENES, type=int))
+        pref_idx = s.value(p + "preference", 0, type=int)
+        if 0 <= pref_idx < self.cb_preference.count():
+            self.cb_preference.setCurrentIndex(pref_idx)
+        restore_combo(self.cb_compress_browser, "compress_browser")
+        restore_combo(self.cb_compress, "compress_mosaic")
+        self.le_tif_browser.setText(s.value(p + "tif_browser", "", type=str))
+        self.le_tif.setText(s.value(p + "tif_mosaic", "", type=str))
 
 
     def _build_ui(self):
@@ -712,7 +868,80 @@ class QuickVRTDialog(QtWidgets.QDialog):
         title_lay.addWidget(self.lbl_subtitle)
         lay.addLayout(title_lay)
         lay.addStretch()
+
+        self.btn_credits = QtWidgets.QPushButton()
+        self.btn_credits.setObjectName("btn_link")
+        self.btn_credits.setCursor(_PointingHand)
+        lay.addWidget(self.btn_credits, alignment=_AlignTop)
         return lay
+
+    def _plugin_version(self):
+        try:
+            meta_path = os.path.join(os.path.dirname(__file__), "metadata.txt")
+            with open(meta_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("version="):
+                        return line.split("=", 1)[1].strip()
+        except OSError:
+            pass
+        return ""
+
+    def _show_credits(self):
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle(self.tr("Credits"))
+        dlg.setStyleSheet(self._build_stylesheet())
+        dlg.setFixedWidth(300)
+
+        lay = QtWidgets.QVBoxLayout(dlg)
+        lay.setContentsMargins(24, 24, 24, 20)
+        lay.setSpacing(8)
+
+        icon_lbl = QtWidgets.QLabel()
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
+        if os.path.exists(icon_path):
+            icon_lbl.setPixmap(QPixmap(icon_path).scaled(48, 48, _KeepAspect, _SmoothTx))
+        icon_lbl.setAlignment(_AlignCenter)
+        lay.addWidget(icon_lbl)
+
+        title_lbl = QtWidgets.QLabel(self.tr("Quick VRT Imagery Loader"))
+        title_lbl.setAlignment(_AlignCenter)
+        title_lbl.setWordWrap(True)
+        f = QFont()
+        f.setPointSize(11)
+        f.setBold(True)
+        title_lbl.setFont(f)
+        lay.addWidget(title_lbl)
+
+        version = self._plugin_version()
+        if version:
+            version_lbl = QtWidgets.QLabel(self.tr("Version {}").format(version))
+            version_lbl.setAlignment(_AlignCenter)
+            version_lbl.setStyleSheet(self._style_text("muted", "font-size: 8pt;"))
+            lay.addWidget(version_lbl)
+
+        author_lbl = QtWidgets.QLabel(self.tr("Created by Vagner Teixeira"))
+        author_lbl.setAlignment(_AlignCenter)
+        author_lbl.setStyleSheet(self._style_text("muted"))
+        lay.addSpacing(8)
+        lay.addWidget(author_lbl)
+
+        link_lbl = QtWidgets.QLabel(
+            '<a href="https://github.com/vagnertxr" style="color:{}; text-decoration:none;">'
+            'github.com/vagnertxr</a>'.format(self._theme["accent"])
+        )
+        link_lbl.setAlignment(_AlignCenter)
+        link_lbl.setOpenExternalLinks(True)
+        link_lbl.setTextInteractionFlags(_TextBrowserInteraction)
+        link_lbl.setCursor(_PointingHand)
+        lay.addWidget(link_lbl)
+
+        lay.addSpacing(12)
+        btn_close = QtWidgets.QPushButton(self.tr("Close"))
+        btn_close.setObjectName("btn_primary")
+        btn_close.clicked.connect(dlg.accept)
+        lay.addWidget(btn_close)
+
+        dlg.exec()
 
     def _build_params_group(self):
         self.grp_params = QtWidgets.QGroupBox()
@@ -822,6 +1051,11 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self.tableWidget.verticalHeader().setVisible(False)
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         left_lay.addWidget(self.tableWidget)
+        self.btn_load_more = QtWidgets.QPushButton()
+        self.btn_load_more.setObjectName("btn_link")
+        self.btn_load_more.setCursor(_PointingHand)
+        self.btn_load_more.setVisible(False)
+        left_lay.addWidget(self.btn_load_more)
         btn_row = QtWidgets.QHBoxLayout()
         self.btn_carregar = QtWidgets.QPushButton()
         self.btn_carregar.setObjectName("btn_primary")
@@ -853,9 +1087,8 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self.lbl_thumbnail.setScaledContents(False)
         self.lbl_thumbnail.installEventFilter(self)
         self.lbl_thumbnail.setStyleSheet(
-            "background-color: {}; border-radius: 4px; color: {};".format(
-                "#11111b" if self._theme["accent_text"] != "#ffffff" else "#f3f5f7",
-                "#585b70" if self._theme["accent_text"] != "#ffffff" else "#8a94a6",
+            "background-color: {}; border-radius: 8px; color: {};".format(
+                self._theme["bg_alt"], self._theme["muted"]
             )
         )
         right_lay.addWidget(self.lbl_thumbnail, stretch=1)
@@ -1046,12 +1279,15 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self.btn_show_footprint.toggled.connect(self._toggle_footprint)
         self.btn_run_mosaic.clicked.connect(self._run_mosaic)
         self.btn_clear_log.clicked.connect(self.log_panel.clear)
+        self.btn_credits.clicked.connect(self._show_credits)
+        self.btn_load_more.clicked.connect(self._load_more_results)
 
     def _retranslate(self):
         self.lbl_title.setText(self.tr("Quick VRT Imagery Loader"))
         self.lbl_subtitle.setText(
             self.tr("Browse Satellite product collections, load imagery and build compositions and mosaics very quickly!")
         )
+        self.btn_credits.setText(self.tr("Credits"))
         self.grp_params.setTitle(self.tr("Search Parameters"))
         self.lbl_provider.setText(self.tr("STAC Provider:"))
         self.lbl_sat.setText(self.tr("Satellite:"))
@@ -1060,14 +1296,15 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self.lbl_to.setText(self.tr(" to "))
         self.lbl_max_clouds.setText(self.tr("Max clouds:"))
         self.lbl_bbox.setText(self.tr("Search area:"))
-        self.btn_extent.setText(self.tr("🗺️ Get from map canvas"))
-        self.btn_listar.setText(self.tr("🔍 Search available images"))
+        self.btn_extent.setText(self.tr("Get from map canvas"))
+        self.btn_listar.setText(self.tr("Search available images"))
         self.tableWidget.setHorizontalHeaderLabels(
             [self.tr("#"), self.tr("Date"), self.tr("Clouds"), self.tr("Scene ID")]
         )
+        self.btn_load_more.setText(self.tr("Load more results"))
         self.btn_carregar.setText(self.tr("Load Selected"))
         self.btn_mosaic_selected.setText(self.tr("Mosaic Selected"))
-        self.btn_copy_id.setText(self.tr("📋 Copy ID"))
+        self.btn_copy_id.setText(self.tr("Copy ID"))
         self.btn_show_footprint.setText(self.tr("Toggle Footprint"))
         self.grp_export_browser.setTitle(self.tr("Export GeoTIFF (optional)"))
         self.lbl_tif_file_browser.setText(self.tr("File:"))
@@ -1103,6 +1340,30 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self._compositions  = self._satellite["compositions"].copy()
         self.comboBox_composicao.clear()
         self.comboBox_composicao.addItems(list(self._compositions.keys()))
+        self._reset_search_results()
+
+    def _reset_search_results(self):
+        """A provider/satellite change invalidates whatever is on screen:
+        those results belong to a different collection with different band
+        and asset keys, so loading them against the new provider would fail.
+        Clear the table, preview, footprints and pagination for a clean slate."""
+        # Guard: this funnels through _update_satellite_params, which also runs
+        # once during __init__ before the browser widgets are wired up.
+        if not hasattr(self, "tableWidget"):
+            return
+        if self._search_worker and self._search_worker.isRunning():
+            self._cancel_search()
+        self.last_items = []
+        self.tableWidget.setRowCount(0)
+        self._clear_rubber_bands()
+        if self.btn_show_footprint.isChecked():
+            self.btn_show_footprint.blockSignals(True)
+            self.btn_show_footprint.setChecked(False)
+            self.btn_show_footprint.blockSignals(False)
+        self.btn_load_more.setVisible(False)
+        self._search_cap = _SEARCH_PAGE_SIZE
+        self._active_thumbnail_asset = self._provider["thumbnail_asset"]
+        self._reset_preview()
 
     def _load_extent(self):
         canvas  = iface.mapCanvas()
@@ -1124,31 +1385,50 @@ class QuickVRTDialog(QtWidgets.QDialog):
         ]
 
     def popular_tabela(self):
-        if hasattr(self, "_search_worker") and self._search_worker and self._search_worker.isRunning():
-            try:
-                self._search_worker.search_done.disconnect()
-                self._search_worker.search_error.disconnect()
-            except:
-                pass
+        # While a search is in flight the same button acts as its cancel.
+        if self._search_worker and self._search_worker.isRunning():
+            self._cancel_search()
+            return
+        self._search_cap = _SEARCH_PAGE_SIZE
+        self._start_search()
 
+    def _load_more_results(self):
+        if self._search_worker and self._search_worker.isRunning():
+            return
+        self._search_cap += _SEARCH_PAGE_SIZE
+        self._start_search()
+
+    def _start_search(self):
         bbox = self._current_bbox()
-        self.btn_listar.setText(self.tr("Searching…"))
-        self.btn_listar.setEnabled(False)
+        self.btn_listar.setText(self.tr("Cancel search"))
+        self.btn_load_more.setVisible(False)
         self._search_worker = SearchWorker(
             self._provider["url"],
             self._collection, bbox,
             self.dateEdit_inicio.date().toString("yyyy-MM-dd"),
             self.dateEdit_final.date().toString("yyyy-MM-dd"),
             self.slider_clouds.value(),
+            max_results=self._search_cap,
             parent=self,
         )
         self._search_worker.search_done.connect(self._on_search_done)
         self._search_worker.search_error.connect(self._on_search_error)
         self._search_worker.start()
 
-    def _on_search_done(self, items):
-        self.btn_listar.setText(self.tr("🔍 Search available images"))
-        self.btn_listar.setEnabled(True)
+    def _cancel_search(self):
+        worker = self._search_worker
+        if worker:
+            try:
+                worker.search_done.disconnect()
+                worker.search_error.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            worker.requestInterruption()
+        self.btn_listar.setText(self.tr("Search available images"))
+
+    def _on_search_done(self, items, has_more):
+        self.btn_listar.setText(self.tr("Search available images"))
+        self.btn_load_more.setVisible(has_more)
         self.last_items = items
         # Freeze the provider's thumbnail asset key at search time so a later
         # provider switch can't make it mismatch with these already-loaded items.
@@ -1169,8 +1449,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self._reset_preview()
 
     def _on_search_error(self, err):
-        self.btn_listar.setText(self.tr("🔍 Search available images"))
-        self.btn_listar.setEnabled(True)
+        self.btn_listar.setText(self.tr("Search available images"))
         iface.messageBar().pushMessage(self.tr("Search error"), err, level=MsgLevel.Critical)
 
     def _on_table_row_clicked(self, row):
@@ -1241,7 +1520,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
     def _on_thumbnail_failed(self, msg):
         self._current_thumbnail_pixmap = QPixmap()
         self.lbl_thumbnail.setPixmap(QPixmap())
-        self.lbl_thumbnail.setText(f"⚠ {msg}")
+        self.lbl_thumbnail.setText(self.tr("Preview error: {}").format(msg))
 
     def _update_thumbnail_pixmap(self):
         if self._current_thumbnail_pixmap.isNull():
@@ -1295,48 +1574,75 @@ class QuickVRTDialog(QtWidgets.QDialog):
                 poly_type = QgsWkbTypes.PolygonGeometry
 
             for row in rows:
-                if row < 0 or row >= len(self.last_items):
-                    continue
+                # Per-item isolation: one bad geometry must not kill the
+                # footprints of every other selected row.
+                try:
+                    if row < 0 or row >= len(self.last_items):
+                        continue
 
-                item = self.last_items[row]
-                geom_dict = item.geometry
-                if not geom_dict:
-                    continue
-                    
-                qgs_geom = self._geometry_from_geojson(geom_dict)
-                
-                if not qgs_geom or qgs_geom.isEmpty():
-                    continue
+                    item = self.last_items[row]
+                    geom_dict = item.geometry
+                    if not geom_dict:
+                        QgsMessageLog.logMessage(
+                            f"Footprint: item {item.id} has no geometry",
+                            "QuickVRT", MsgLevel.Warning)
+                        continue
 
-                if xform:
-                    qgs_geom.transform(xform)
+                    qgs_geom = self._geometry_from_geojson(geom_dict)
 
-                rb = QgsRubberBand(iface.mapCanvas(), poly_type) 
-                rb.setColor(QColor(137, 180, 250, 180))
-                rb.setFillColor(QColor(137, 180, 250, 28))
-                rb.setWidth(2)
-                rb.setToGeometry(qgs_geom, None)
-                rb.show()
-                self._rubber_bands.append(rb)
+                    if not qgs_geom or qgs_geom.isEmpty():
+                        QgsMessageLog.logMessage(
+                            f"Footprint: could not parse geometry of {item.id}",
+                            "QuickVRT", MsgLevel.Warning)
+                        continue
+
+                    if xform:
+                        qgs_geom.transform(xform)
+
+                    rb = QgsRubberBand(iface.mapCanvas(), poly_type)
+                    rb.setColor(QColor(137, 180, 250, 180))
+                    rb.setFillColor(QColor(137, 180, 250, 28))
+                    rb.setWidth(2)
+                    rb.setToGeometry(qgs_geom, None)
+                    rb.show()
+                    if rb.numberOfVertices() == 0:
+                        QgsMessageLog.logMessage(
+                            f"Footprint: empty rubber band for {item.id}",
+                            "QuickVRT", MsgLevel.Warning)
+                    self._rubber_bands.append(rb)
+                except Exception as e:
+                    QgsMessageLog.logMessage(
+                        f"Footprint error on row {row}: {e}",
+                        "QuickVRT", MsgLevel.Warning)
         except Exception as e:
             QgsMessageLog.logMessage(f"Footprint error: {str(e)}", "QuickVRT", MsgLevel.Warning)
 
     @staticmethod
     def _geometry_from_geojson(geom_dict):
-        import json
+        """Build a QgsGeometry straight from GeoJSON coordinate arrays.
+        QgsJsonUtils.geometryFromGeoJson (and QgsGeometry.fromJson) are
+        missing from older QGIS 3.x releases such as 3.34, so footprints
+        must not depend on either API."""
+        gtype  = (geom_dict or {}).get("type", "")
+        coords = (geom_dict or {}).get("coordinates")
+        if not coords:
+            return None
 
-        geom_json = json.dumps(geom_dict)
-        try:
-            qgs_geom = QgsGeometry.fromJson(geom_json)
-            if qgs_geom and not qgs_geom.isEmpty():
-                return qgs_geom
-        except Exception:
-            pass
+        def ring_to_points(ring):
+            return [QgsPointXY(pt[0], pt[1]) for pt in ring]
 
         try:
-            return QgsJsonUtils.geometryFromGeoJson(geom_json)
+            if gtype == "Polygon":
+                return QgsGeometry.fromPolygonXY(
+                    [ring_to_points(r) for r in coords]
+                )
+            if gtype == "MultiPolygon":
+                return QgsGeometry.fromMultiPolygonXY(
+                    [[ring_to_points(r) for r in poly] for poly in coords]
+                )
         except Exception:
             return None
+        return None
 
     def _clear_rubber_bands(self):
         for rb in self._rubber_bands:
@@ -1536,6 +1842,10 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self._start_mosaic_worker(params, re_enable=[self.btn_mosaic_selected])
 
     def _run_mosaic(self):
+        # While a mosaic is in flight the same button acts as its cancel.
+        if self._mosaic_worker and self._mosaic_worker.isRunning():
+            self._cancel_mosaic()
+            return
         export  = self.chk_export_tif.isChecked()
         out_tif = self.le_tif.text().strip()
         if export and not out_tif:
@@ -1571,12 +1881,11 @@ class QuickVRTDialog(QtWidgets.QDialog):
         }
         self.tableMosaic.setRowCount(0)
         self.log_panel.clear()
-        self.btn_run_mosaic.setEnabled(False)
         self.mosaic_progress.setVisible(True)
-        self._start_mosaic_worker(params, re_enable=[self.btn_run_mosaic])
+        self._start_mosaic_worker(params)
 
     def _start_mosaic_worker(self, params, re_enable=None):
-        if hasattr(self, "_mosaic_worker") and self._mosaic_worker and self._mosaic_worker.isRunning():
+        if self._mosaic_worker and self._mosaic_worker.isRunning():
             self._mosaic_worker.terminate()
             self._mosaic_worker.wait()
 
@@ -1588,6 +1897,26 @@ class QuickVRTDialog(QtWidgets.QDialog):
         self._mosaic_worker.finished.connect(self._on_mosaic_finished)
         self._mosaic_worker.error.connect(self._on_mosaic_error)
         self._mosaic_worker.start()
+        self.btn_run_mosaic.setText(self.tr("Cancel mosaic"))
+
+    def _cancel_mosaic(self):
+        worker = self._mosaic_worker
+        if worker:
+            for sig in (worker.progress, worker.progress_pct,
+                        worker.item_selected, worker.finished, worker.error):
+                try:
+                    sig.disconnect()
+                except (TypeError, RuntimeError):
+                    pass
+            worker.requestInterruption()
+            if worker.isRunning():
+                worker.terminate()
+                worker.wait()
+        self._re_enable_buttons()
+        self.btn_run_mosaic.setText(self.tr("Generate Mosaic"))
+        self.mosaic_progress.setRange(0, 0)
+        self.mosaic_progress.setVisible(False)
+        self.log_panel.append(self.tr("Cancelled by user."))
 
     def _on_mosaic_pct(self, pct):
         self.mosaic_progress.setRange(0, 100)
@@ -1609,6 +1938,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
 
     def _on_mosaic_finished(self, vrt, tif):
         self._re_enable_buttons()
+        self.btn_run_mosaic.setText(self.tr("Generate Mosaic"))
         self.mosaic_progress.setRange(0, 0)
         self.mosaic_progress.setVisible(False)
         comp = self.comboBox_composicao.currentText()
@@ -1628,9 +1958,10 @@ class QuickVRTDialog(QtWidgets.QDialog):
 
     def _on_mosaic_error(self, err):
         self._re_enable_buttons()
+        self.btn_run_mosaic.setText(self.tr("Generate Mosaic"))
         self.mosaic_progress.setRange(0, 0)
         self.mosaic_progress.setVisible(False)
-        self.log_panel.append(f"\n❌ ERROR:\n{err}")
+        self.log_panel.append(self.tr("\nERROR:\n{}").format(err))
         QtWidgets.QMessageBox.critical(self, self.tr("Mosaic error"), err[:800])
 
     def _re_enable_buttons(self):
@@ -1664,6 +1995,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         return lbl
 
     def closeEvent(self, event):
+        self._save_settings()
         self._clear_rubber_bands()
         super().closeEvent(event)
 

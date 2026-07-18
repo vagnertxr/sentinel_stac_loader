@@ -10,6 +10,27 @@ from .indices import create_derived_vrt
 
 gdal.UseExceptions()
 
+
+def _summarize_error(text):
+    """STAC/HTTP failures (e.g. a CDN's 502/504 gateway page) sometimes
+    surface as a full HTML error page in the exception text. Collapse that
+    into a short, readable summary instead of dumping raw markup in the UI."""
+    stripped = text.strip()
+    lower = stripped.lower()
+    if not (lower.startswith("<!doctype") or lower.startswith("<html") or "<html" in lower[:200]):
+        return text
+    import re
+    status_match = re.search(r"<h1>\s*(\d{3})\s*</h1>", text, re.IGNORECASE)
+    title_match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
+    status = status_match.group(1) if status_match else None
+    title = title_match.group(1).strip() if title_match else None
+    if status and title:
+        return f"Server error {status}: {title}. The remote service may be temporarily unavailable - please try again shortly."
+    if title:
+        return f"Server error: {title}. The remote service may be temporarily unavailable - please try again shortly."
+    return "The remote server returned an error page. It may be temporarily unavailable - please try again shortly."
+
+
 class MosaicWorker(QThread):
     progress      = pyqtSignal(str)
     progress_pct  = pyqtSignal(int)       # 0-100
@@ -25,6 +46,27 @@ class MosaicWorker(QThread):
     def tr(self, msg):
         # Context kept as the pre-1.0 class name so existing pt/es .qm translations stay matched.
         return QCoreApplication.translate('SentinelSTACDialog', msg)
+
+    def _search_items(self, catalog, attempts=3, **search_kwargs):
+        """Run a STAC search, retrying on transient failures (e.g. Azure
+        Front Door 504s on Planetary Computer) before giving up."""
+        last_err = None
+        for attempt in range(attempts):
+            if self.isInterruptionRequested():
+                return []
+            try:
+                search = catalog.search(**search_kwargs)
+                return list(search.items())
+            except Exception as e:
+                last_err = e
+                if attempt < attempts - 1:
+                    self.progress.emit(
+                        self.tr("Search request failed, retrying ({}/{})...").format(
+                            attempt + 1, attempts - 1
+                        )
+                    )
+                    self.msleep(4000)
+        raise last_err
 
     def run(self):
         try:
@@ -43,7 +85,14 @@ class MosaicWorker(QThread):
             gdal.SetConfigOption("GDAL_HTTP_RETRY_DELAY", "3")
             gdal.SetConfigOption("VSI_CACHE", "TRUE")
             gdal.SetConfigOption("GDAL_CACHEMAX", "512")
+            gdal.SetConfigOption("GDAL_HTTP_TIMEOUT", "60")
             gdal.SetConfigOption("GDAL_HTTP_MERGE_CONSECUTIVE_HTTP_RETRIEVALS", "YES")
+            # Some CBERS assets (e.g. WPM panchromatic, ~2GB, one strip per
+            # pixel row, no overviews) are extremely inefficient to stream at
+            # GDAL's tiny 16KB default chunk size - thousands of round trips.
+            # A larger chunk/cache lets GDAL coalesce many strip reads into few requests.
+            gdal.SetConfigOption("CPL_VSIL_CURL_CHUNK_SIZE", "1048576")
+            gdal.SetConfigOption("VSI_CACHE_SIZE", "67108864")
 
             self.progress_pct.emit(0)
             self.progress.emit(self.tr("Connecting to STAC catalog..."))
@@ -51,6 +100,9 @@ class MosaicWorker(QThread):
             catalog = pystac_client.Client.open(
                 catalog_url,
                 modifier=pc.sign_inplace if needs_signing else None,
+                # Fail fast rather than waiting out a CDN's own ~30s gateway
+                # timeout on every attempt - our retry loop handles the rest.
+                timeout=(10, 20),
             )
 
             bbox_coords     = p["bbox"]
@@ -74,7 +126,8 @@ class MosaicWorker(QThread):
                 if p.get("preference") == "Most Recent":
                     sort_param = "-properties.datetime"
 
-                search = catalog.search(
+                all_items = self._search_items(
+                    catalog,
                     collections=[p["collection"]],
                     intersects=mapping(bbox_poly),
                     datetime=f"{p['start_date']}/{p['end_date']}",
@@ -82,7 +135,6 @@ class MosaicWorker(QThread):
                     max_items=500,
                     sortby=[sort_param],
                 )
-                all_items = list(search.items())
 
             if not all_items:
                 self.error.emit(self.tr("No images found with the provided parameters."))
@@ -100,6 +152,8 @@ class MosaicWorker(QThread):
             )
 
             for item in all_items:
+                if self.isInterruptionRequested():
+                    return
                 if uncovered_area.is_empty or uncovered_area.area <= 1e-9:
                     break
                 if len(selected_items) >= p.get("max_items", 100):
@@ -171,6 +225,8 @@ class MosaicWorker(QThread):
             n_bands = len(bands)
 
             for b_idx, band_name in enumerate(bands, 1):
+                if self.isInterruptionRequested():
+                    return
                 urls = [
                     "/vsicurl/" + item.assets[band_name].href
                     for item in selected_items
@@ -260,7 +316,8 @@ class MosaicWorker(QThread):
             self.finished.emit(final_vrt_path, out_tif)
 
         except Exception as exc:
-            self.error.emit("{}\n{}".format(exc, traceback.format_exc()))
+            summary = _summarize_error(str(exc))
+            self.error.emit("{}\n\n{}\n{}".format(summary, exc, traceback.format_exc()))
 
     def _export_tif(self, vrt_path, out_tif, compress):
         co  = ["TILED=YES", "COMPRESS={}".format(compress), "PREDICTOR=2", "BIGTIFF=IF_SAFER"]
