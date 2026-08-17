@@ -8,12 +8,11 @@ from datetime import date, timedelta
 
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt, QCoreApplication, QSize, QSettings, pyqtSignal, QThread
-from qgis.PyQt.QtGui import QPixmap, QFont, QColor, QIcon, QPalette
+from qgis.PyQt.QtGui import QPixmap, QFont, QColor, QPalette
 from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
-    QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsRectangle,
+    QgsGeometry, QgsPointXY,
     QgsColorRampShader, QgsRasterShader, QgsSingleBandPseudoColorRenderer
 )
 from qgis.gui import QgsRubberBand

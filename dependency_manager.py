@@ -169,8 +169,12 @@ class DependencyManager:
         try:
             from qgis.core import QgsApplication
             roots.append(QgsApplication.prefixPath())
-        except Exception:
-            pass
+        except Exception as e:
+            # Only ever an extra place to look: the roots derived from
+            # sys.executable and sys.prefix above already cover every layout
+            # we know of, so losing this one is not worth failing over.
+            self._log(f"Could not read the QGIS prefix path, continuing "
+                      f"without it: {e}")
 
         for root in roots:
             if not root:
@@ -449,8 +453,12 @@ class DependencyManager:
         try:
             self._run_pip(args, startupinfo)
             return
-        except subprocess.CalledProcessError as e:
-            stderr = e.stderr or ""
+        except subprocess.CalledProcessError as exc:
+            # Python unbinds the `as` name once the block exits, so hold on to
+            # the failure itself: it carries pip's stderr, which is the only
+            # useful thing to show when none of the retries below apply.
+            failure = exc
+            stderr = exc.stderr or ""
 
         if "externally-managed-environment" in stderr:
             self._run_pip(args + ["--break-system-packages"], startupinfo)
@@ -463,8 +471,7 @@ class DependencyManager:
             self._run_pip([a for a in args if a != "--user"], startupinfo)
             return
 
-        raise subprocess.CalledProcessError(
-            e.returncode, e.cmd, e.stdout, e.stderr)
+        raise failure
 
     def _install_packages(self, packages):
         startupinfo = None
