@@ -13,7 +13,7 @@ from qgis.core import (
     QgsRasterLayer, QgsProject, QgsCoordinateTransform,
     QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
     QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsRectangle, QgsWkbTypes,
+    QgsRectangle,
     QgsColorRampShader, QgsRasterShader, QgsSingleBandPseudoColorRenderer
 )
 from qgis.gui import QgsRubberBand
@@ -22,74 +22,35 @@ from qgis.utils import iface
 from .indices import create_derived_vrt
 from .mosaic_worker import MosaicWorker
 
-import qgis.PyQt.QtCore as _qc
-_QT6 = [int(x) for x in _qc.qVersion().split(".")][0] >= 6
+# Fully scoped enum names. These are valid under both Qt5 (PyQt5) and Qt6
+# (PyQt6), so no version branching is needed; QGIS >= 3.34 is required, which
+# is what metadata.txt declares.
+_AlignCenter   = Qt.AlignmentFlag.AlignCenter
+_AlignRight    = Qt.AlignmentFlag.AlignRight
+_AlignTop      = Qt.AlignmentFlag.AlignTop
+_Horizontal    = Qt.Orientation.Horizontal
+_Vertical      = Qt.Orientation.Vertical
+_NoEditTrig    = QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+_SelectRows    = QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
+_SingleSel     = QtWidgets.QAbstractItemView.SelectionMode.SingleSelection
+_ExtendedSel   = QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
+_NoSel         = QtWidgets.QAbstractItemView.SelectionMode.NoSelection
+_NoFocus       = Qt.FocusPolicy.NoFocus
+_StyledPanel   = QtWidgets.QFrame.Shape.StyledPanel
+_WindowModal   = Qt.WindowModality.WindowModal
+_KeepAspect    = Qt.AspectRatioMode.KeepAspectRatio
+_SmoothTx      = Qt.TransformationMode.SmoothTransformation
+_WrapWord      = Qt.TextInteractionFlag.TextSelectableByMouse
+_TextBrowserInteraction = Qt.TextInteractionFlag.TextBrowserInteraction
+_PointingHand  = Qt.CursorShape.PointingHandCursor
+_ResizeEvent   = QtCore.QEvent.Type.Resize
 
-def _flag(cls, name):
-    """Return Qt flag/enum value, trying Qt6 nested enums first."""
-    try:
-        return getattr(cls, name)
-    except AttributeError:
-        parts = name.split(".")
-        obj = cls
-        for p in parts:
-            obj = getattr(obj, p)
-        return obj
 
-if _QT6:
-    _AlignCenter   = Qt.AlignmentFlag.AlignCenter
-    _AlignRight    = Qt.AlignmentFlag.AlignRight
-    _AlignTop      = Qt.AlignmentFlag.AlignTop
-    _Horizontal    = Qt.Orientation.Horizontal
-    _Vertical      = Qt.Orientation.Vertical
-    _NoEditTrig    = QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
-    _SelectRows    = QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
-    _SingleSel     = QtWidgets.QAbstractItemView.SelectionMode.SingleSelection
-    _ExtendedSel   = QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
-    _NoSel         = QtWidgets.QAbstractItemView.SelectionMode.NoSelection
-    _NoFocus       = Qt.FocusPolicy.NoFocus
-    _StyledPanel   = QtWidgets.QFrame.Shape.StyledPanel
-    _WindowModal   = Qt.WindowModality.WindowModal
-    _KeepAspect    = Qt.AspectRatioMode.KeepAspectRatio
-    _SmoothTx      = Qt.TransformationMode.SmoothTransformation
-    _WrapWord      = Qt.TextInteractionFlag.TextSelectableByMouse
-    _TextBrowserInteraction = Qt.TextInteractionFlag.TextBrowserInteraction
-    _PointingHand  = Qt.CursorShape.PointingHandCursor
-    _ResizeEvent   = QtCore.QEvent.Type.Resize
-else:
-    _AlignCenter   = Qt.AlignCenter
-    _AlignRight    = Qt.AlignRight
-    _AlignTop      = Qt.AlignTop
-    _Horizontal    = Qt.Horizontal        
-    _Vertical      = Qt.Vertical            
-    _NoEditTrig    = QtWidgets.QAbstractItemView.NoEditTriggers
-    _SelectRows    = QtWidgets.QAbstractItemView.SelectRows
-    _SingleSel     = QtWidgets.QAbstractItemView.SingleSelection
-    _ExtendedSel   = QtWidgets.QAbstractItemView.ExtendedSelection
-    _NoSel         = QtWidgets.QAbstractItemView.NoSelection
-    _NoFocus       = Qt.NoFocus             
-    _StyledPanel   = QtWidgets.QFrame.StyledPanel
-    _WindowModal   = Qt.WindowModal        
-    _KeepAspect    = Qt.KeepAspectRatio     
-    _SmoothTx      = Qt.SmoothTransformation  
-    _WrapWord      = Qt.TextSelectableByMouse
-    _TextBrowserInteraction = Qt.TextBrowserInteraction
-    _PointingHand  = Qt.PointingHandCursor
-    _ResizeEvent   = QtCore.QEvent.Resize
-
-try:
-    _ml = Qgis.MessageLevel
-    class MsgLevel:
-        Info     = _ml.Info
-        Warning  = _ml.Warning
-        Critical = _ml.Critical
-        Success  = _ml.Success
-except AttributeError:
-    class MsgLevel:
-        Info     = Qgis.Info      
-        Warning  = Qgis.Warning   
-        Critical = Qgis.Critical  
-        Success  = Qgis.Success  
+class MsgLevel:
+    Info     = Qgis.MessageLevel.Info
+    Warning  = Qgis.MessageLevel.Warning
+    Critical = Qgis.MessageLevel.Critical
+    Success  = Qgis.MessageLevel.Success
 
 # Predefined band combinations and indices for Sentinel-2 and Landsat.
 SENTINEL2_COMPOSITIONS = {
@@ -584,7 +545,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         palette rather than a naive hex swap, so both feel intentionally
         designed instead of one being a patched version of the other."""
         palette = QtWidgets.QApplication.palette()
-        window_role = QPalette.ColorRole.Window if _QT6 else QPalette.Window
+        window_role = QPalette.ColorRole.Window
         is_dark = palette.color(window_role).lightness() < 128
         if is_dark:
             return {
@@ -1493,7 +1454,9 @@ class QuickVRTDialog(QtWidgets.QDialog):
             try:
                 self._thumb_worker.thumbnail_ready.disconnect()
                 self._thumb_worker.failed.disconnect()
-            except:
+            except (TypeError, RuntimeError):
+                # TypeError: no connections left; RuntimeError: C++ object
+                # already deleted. Both mean there is nothing to disconnect.
                 pass
 
         self._thumb_worker = ThumbnailWorker(asset.href, parent=self)
@@ -1566,12 +1529,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
             if src_crs != dst_crs:
                 xform = QgsCoordinateTransform(src_crs, dst_crs, QgsProject.instance())
 
-            # Safely get Polygon geometry type for RubberBand
-            try:
-                # QGIS 4/Qt6 way
-                poly_type = Qgis.GeometryType.Polygon
-            except AttributeError:
-                poly_type = QgsWkbTypes.PolygonGeometry
+            poly_type = Qgis.GeometryType.Polygon
 
             for row in rows:
                 # Per-item isolation: one bad geometry must not kill the
@@ -1648,7 +1606,8 @@ class QuickVRTDialog(QtWidgets.QDialog):
         for rb in self._rubber_bands:
             try:
                 rb.reset()
-            except:
+            except (AttributeError, RuntimeError):
+                # The rubber band's C++ side is gone; drop it from the scene.
                 iface.mapCanvas().scene().removeItem(rb)
         self._rubber_bands = []
 
@@ -1734,10 +1693,7 @@ class QuickVRTDialog(QtWidgets.QDialog):
         provider = layer.dataProvider()
         ramp_items = QuickVRTDialog._index_color_ramp(formula)
         color_ramp = QgsColorRampShader()
-        try:
-            color_ramp.setColorRampType(QgsColorRampShader.Type.Interpolated)
-        except AttributeError:
-            color_ramp.setColorRampType(QgsColorRampShader.Interpolated)
+        color_ramp.setColorRampType(QgsColorRampShader.Type.Interpolated)
         color_ramp.setColorRampItemList(
             [
                 QgsColorRampShader.ColorRampItem(value, QColor(color), label)

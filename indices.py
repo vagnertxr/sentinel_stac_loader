@@ -1,7 +1,20 @@
 # -*- coding: utf-8 -*-
 """Helpers for GDAL VRT-derived spectral index layers."""
 
-from xml.sax.saxutils import escape
+
+def escape(text):
+    """Escape XML special characters for VRT generation.
+
+    Implemented locally, rather than pulled from the standard library, so that
+    this module imports no XML machinery at all: the plugin only ever *writes*
+    VRT documents and never parses untrusted input, so no parser attack
+    surface should exist here.
+    """
+    return (str(text).replace("&", "&amp;")
+                     .replace("<", "&lt;")
+                     .replace(">", "&gt;")
+                     .replace('"', "&quot;")
+                     .replace("'", "&apos;"))
 
 
 INDEX_FORMULAS = {

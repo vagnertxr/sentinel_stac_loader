@@ -1,6 +1,6 @@
 [general]
 name=Quick VRT Imagery Loader
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.34
 qgisMaximumVersion=4.99
 description=Loads satellite imagery from multiple STAC APIs quickly as VRT
 version=1.0.0

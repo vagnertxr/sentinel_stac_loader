@@ -30,21 +30,11 @@ from qgis.core import Qgis, QgsMessageLog
 from .dependency_manager import DependencyManager
 
 
-try:
-    # QGIS 4.x / Qt6
-    _ml = Qgis.MessageLevel
-    class MsgLevel:
-        Info     = _ml.Info
-        Warning  = _ml.Warning
-        Critical = _ml.Critical
-        Success  = _ml.Success
-except AttributeError:
-    # QGIS 3.x / Qt5
-    class MsgLevel:
-        Info     = Qgis.Info
-        Warning  = Qgis.Warning
-        Critical = Qgis.Critical
-        Success  = Qgis.Success
+class MsgLevel:
+    Info     = Qgis.MessageLevel.Info
+    Warning  = Qgis.MessageLevel.Warning
+    Critical = Qgis.MessageLevel.Critical
+    Success  = Qgis.MessageLevel.Success
 
 class QuickVRT:
     """QGIS plugin implementation."""

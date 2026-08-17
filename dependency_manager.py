@@ -1,5 +1,7 @@
+import re
 import sys
 import os
+import site
 import subprocess
 from qgis.core import Qgis, QgsMessageLog
 from qgis.PyQt.QtWidgets import (
@@ -9,31 +11,33 @@ from qgis.PyQt.QtWidgets import (
 from qgis.PyQt.QtCore import Qt
 
 
-try:
-    _ml = Qgis.MessageLevel
-    class MsgLevel:
-        Info     = _ml.Info
-        Warning  = _ml.Warning
-        Critical = _ml.Critical
-        Success  = _ml.Success
-except AttributeError:
-    class MsgLevel:
-        Info     = Qgis.Info
-        Warning  = Qgis.Warning
-        Critical = Qgis.Critical
-        Success  = Qgis.Success
+class MsgLevel:
+    Info     = Qgis.MessageLevel.Info
+    Warning  = Qgis.MessageLevel.Warning
+    Critical = Qgis.MessageLevel.Critical
+    Success  = Qgis.MessageLevel.Success
 
 
-try:
-    _ACCEPTED = QDialog.DialogCode.Accepted   # PyQt6
-except AttributeError:
-    _ACCEPTED = QDialog.Accepted              # PyQt5
+_ACCEPTED = QDialog.DialogCode.Accepted
+
+
+#: A dependency name must be a plain PEP 508 distribution name: letters,
+#: digits and single -/_/. separators. This deliberately excludes version
+#: specifiers, URLs, paths, option-like leading dashes and shell
+#: metacharacters, so nothing that reaches pip can be read as anything other
+#: than a package name from PyPI.
+_SAFE_PKG_NAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$")
 
 
 class DependencyManager:
     PLUGIN_NAME = "Quick VRT Imagery Loader"
 
     def __init__(self, iface, plugin_name, dependencies):
+        for pip_name in dependencies:
+            if not _SAFE_PKG_NAME.match(pip_name):
+                raise ValueError(
+                    "Refusing to manage unsafe dependency name: {!r}".format(
+                        pip_name))
         self.iface = iface
         self.plugin_name = plugin_name
         self.dependencies = dependencies
@@ -82,20 +86,14 @@ class DependencyManager:
 
     def _get_user_site_packages(self):
         try:
-            startupinfo = None
-            if os.name == 'nt':
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-            result = subprocess.run(
-                [self._python_exe, '-c',
-                 'import site; print(site.getusersitepackages())'],
-                capture_output=True, text=True,
-                startupinfo=startupinfo
-            )
-            path = result.stdout.strip()
+            # Resolved in-process: the interpreter running QGIS is the one
+            # whose sys.path we are about to extend, so asking the local site
+            # module is both correct and avoids spawning a subprocess.
+            path = site.getusersitepackages()
+            if isinstance(path, (list, tuple)):
+                path = path[0] if path else None
             if path:
-                return path
+                return path.strip()
         except Exception as e:
             QgsMessageLog.logMessage(
                 f"Could not determine user site-packages: {e}",
@@ -155,20 +153,32 @@ class DependencyManager:
         --break-system-packages on PEP 668 "externally managed environment"
         distros (Debian 12+/Ubuntu 23.04+ and newer) where a plain pip
         install is refused outright. --user still confines the install to
-        the user's own site-packages, so this stays as safe as the normal path."""
+        the user's own site-packages, so this stays as safe as the normal path.
+
+        Security notes: the argument vector is passed as a list with
+        shell=False, so no shell parsing occurs; `pkg` is additionally
+        validated against _SAFE_PKG_NAME, so it cannot become a pip option, a
+        URL or a local path; and the interpreter is the one QGIS is running
+        under. Installation only happens after explicit user consent in
+        DependencyInstallDialog."""
+        if not _SAFE_PKG_NAME.match(pkg):
+            raise ValueError("Unsafe package name: {!r}".format(pkg))
+
         args = [self._python_exe, "-m", "pip", "install", "--user", pkg]
         try:
+            # Fixed argv, shell=False, package name validated above.
             subprocess.run(
                 args, startupinfo=startupinfo, capture_output=True,
-                check=True, text=True,
+                check=True, text=True, shell=False,  # nosec B603
             )
         except subprocess.CalledProcessError as e:
             if "externally-managed-environment" not in (e.stderr or ""):
                 raise
+            # Same argv plus one fixed literal flag; still shell=False.
             subprocess.run(
                 args + ["--break-system-packages"],
                 startupinfo=startupinfo, capture_output=True,
-                check=True, text=True,
+                check=True, text=True, shell=False,  # nosec B603
             )
 
     def _install_packages(self, packages):
@@ -180,9 +190,7 @@ class DependencyManager:
         progress = QProgressDialog(
             "Installing dependencies...", "Cancel", 0, len(packages),
             self.iface.mainWindow())
-        progress.setWindowModality(Qt.WindowModality.WindowModal \
-            if hasattr(Qt.WindowModality, 'WindowModal') \
-            else Qt.WindowModal)
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setAutoClose(True)
         progress.show()
 
