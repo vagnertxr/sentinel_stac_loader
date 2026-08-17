@@ -26,6 +26,7 @@ Download the `.zip` file from this repository (under "releases") and use the **I
 
 - **Windows**: `%AppData%\Roaming\QGIS\QGIS4\profiles\default\python\plugins`
 - **Linux**: `~/.local/share/QGIS/QGIS4/profiles/default/python/plugins`
+- **macOS**: `~/Library/Application Support/QGIS/QGIS4/profiles/default/python/plugins`
 
 ---
 
@@ -51,6 +52,16 @@ python3 -m pip install pystac-client planetary-computer shapely
 
 ```bash
 pip install pystac-client planetary-computer shapely
+```
+
+#### macOS (via Terminal)
+
+Use the Python bundled inside QGIS, not the system `python3` — the system interpreter is a different
+version and installs into a directory QGIS never reads, so the packages would appear to install and
+still be missing:
+
+```bash
+/Applications/QGIS.app/Contents/MacOS/python -m pip install --user pystac-client planetary-computer shapely
 ```
 
 ---

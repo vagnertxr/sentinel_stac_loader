@@ -3,7 +3,7 @@ name=Quick VRT Imagery Loader
 qgisMinimumVersion=3.34
 qgisMaximumVersion=4.99
 description=Loads satellite imagery from multiple STAC APIs quickly as VRT
-version=1.0.0
+version=1.0.1
 author=Vagner Teixeira
 email=junior.vagner@live.com
 
@@ -18,6 +18,7 @@ repository=https://github.com/vagnertxr/quickvrt
 hasProcessingProvider=no
 
 changelog=
+    1.0.1 - Fixed automatic dependency installation on macOS, where the plugin used to start a second QGIS instance instead of pip and install nothing. It now locates the Python interpreter bundled inside QGIS.app and verifies that its packages are importable from QGIS before using it. Added a fallback dialog with a copyable, ready-to-run install command when automatic installation is not possible, and newly installed packages are now importable without restarting QGIS.
     1.0 - Added multi-provider STAC support with a provider selector. Added CBERS-4/4A support: MUX, WFI, WPM multispectral+panchromatic, WPM pansharpened true color (TCI), PAN10M and PAN5M panchromatic, each with dedicated band compositions and spectral indices.
     0.7 - Added Mosaic functions, added footprint, new UI
     0.6 - Added QGIS 4.x / Qt6 compatibility, Spanish language support, previews, max cloud slider, revamped UI
@@ -36,10 +37,11 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-# Since QGIS 3.8, a comma separated list of plugins to be installed
-# (or upgraded) can be specified.
-# Check the documentation for more information.
-# plugin_dependencies=pystac-client,planetary-computer,shapely
+# plugin_dependencies is deliberately unset. It takes the names of other
+# *QGIS plugins* from the plugin repository, not PyPI distributions, so
+# listing pystac-client/planetary-computer/shapely there makes QGIS look for
+# plugins that do not exist. The Python packages are handled by
+# dependency_manager.py instead.
 
 # If the plugin can run on QGIS Server.
 server=False
